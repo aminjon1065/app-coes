@@ -1,0 +1,160 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Dark theme (default) ──────────────────────────────────── */
+:root,
+.dark {
+  --background: #0f1117;
+  --foreground: #f0f1f5;
+  --card: #141820;
+  --card-foreground: #f0f1f5;
+  --popover: #181e28;
+  --popover-foreground: #f0f1f5;
+  --primary: #5b8def;
+  --primary-foreground: #0f1117;
+  --secondary: #252d3d;
+  --secondary-foreground: #9ba3b5;
+  --muted: #252d3d;
+  --muted-foreground: #6b7589;
+  --accent: #1e2535;
+  --accent-foreground: #f0f1f5;
+  --destructive: #cc2d1a;
+  --destructive-foreground: #f0f1f5;
+  --border: #252d3d;
+  --input: #252d3d;
+  --ring: #5b8def;
+
+  /* Sentinel-specific */
+  --sentinel-bg: #0f1117;
+  --sentinel-card: #141820;
+  --sentinel-sidebar: #181e28;
+  --sentinel-border: #252d3d;
+  --sentinel-text: #f0f1f5;
+  --sentinel-muted: #9ba3b5;
+  --sentinel-subtle: #6b7589;
+  --sentinel-primary: #5b8def;
+
+  /* Severity colors */
+  --severity-1: #4ead7a;
+  --severity-2: #e6a020;
+  --severity-3: #dd6020;
+  --severity-4: #cc2d1a;
+  --severity-bg-1: rgba(78, 173, 122, 0.08);
+  --severity-bg-2: rgba(230, 160, 32, 0.08);
+  --severity-bg-3: rgba(221, 96, 32, 0.08);
+  --severity-bg-4: rgba(204, 45, 26, 0.10);
+}
+
+/* ─── Light theme override ───────────────────────────────────── */
+.light {
+  --background: #f5f6fa;
+  --foreground: #111318;
+  --card: #ffffff;
+  --card-foreground: #111318;
+  --popover: #ffffff;
+  --popover-foreground: #111318;
+  --primary: #3a6bc7;
+  --primary-foreground: #ffffff;
+  --secondary: #e4e7f0;
+  --secondary-foreground: #444c5e;
+  --muted: #eaecf4;
+  --muted-foreground: #6b7589;
+  --border: #d6dae8;
+  --input: #d6dae8;
+  --ring: #3a6bc7;
+}
+
+/* ─── Base reset ─────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+/* ─── Scrollbar styling ──────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--sentinel-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--sentinel-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--sentinel-subtle);
+}
+
+/* ─── Utility classes ────────────────────────────────────────── */
+.font-mono {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+.text-sentinel-primary { color: var(--sentinel-primary); }
+.text-sentinel-muted { color: var(--sentinel-muted); }
+.text-sentinel-subtle { color: var(--sentinel-subtle); }
+.bg-sentinel-card { background-color: var(--sentinel-card); }
+.bg-sentinel-sidebar { background-color: var(--sentinel-sidebar); }
+.border-sentinel { border-color: var(--sentinel-border); }
+
+/* ─── Pulsing animations ─────────────────────────────────────── */
+@keyframes sentinel-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes sentinel-ping {
+  75%, 100% { transform: scale(2); opacity: 0; }
+}
+
+.animate-sentinel-pulse {
+  animation: sentinel-pulse 2s ease-in-out infinite;
+}
+
+.animate-sentinel-ping {
+  animation: sentinel-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* ─── Critical row pulse border ──────────────────────────────── */
+@keyframes critical-border-pulse {
+  0%, 100% { border-color: rgba(204, 45, 26, 0.8); }
+  50% { border-color: rgba(204, 45, 26, 0.2); }
+}
+
+.critical-pulse-border {
+  animation: critical-border-pulse 2s ease-in-out infinite;
+}
+
+/* ─── Live map pulse ─────────────────────────────────────────── */
+@keyframes map-dot-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(204, 45, 26, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(204, 45, 26, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(204, 45, 26, 0); }
+}
+
+.map-dot-critical {
+  animation: map-dot-pulse 2s ease-out infinite;
+}

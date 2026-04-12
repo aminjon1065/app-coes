@@ -1,0 +1,46 @@
+# Prometheus scrape configuration for local Sentinel development.
+# All app services expose prom-client metrics at /metrics.
+# host.docker.internal resolves to the Docker host machine (Mac + Linux via extra_hosts).
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    env: development
+
+scrape_configs:
+  # ── Application services (run via pnpm run dev on the host) ─────────────────
+  - job_name: sentinel-api
+    static_configs:
+      - targets: ["host.docker.internal:3001"]
+    metrics_path: /metrics
+
+  - job_name: sentinel-realtime
+    static_configs:
+      - targets: ["host.docker.internal:3002"]
+    metrics_path: /metrics
+
+  - job_name: sentinel-workers
+    static_configs:
+      - targets: ["host.docker.internal:3004"]
+    metrics_path: /metrics
+
+  - job_name: sentinel-sfu
+    static_configs:
+      - targets: ["host.docker.internal:3003"]
+    metrics_path: /metrics
+
+  # ── Infrastructure services (inside Docker network) ──────────────────────────
+  - job_name: nats
+    static_configs:
+      - targets: ["nats:8222"]
+    metrics_path: /metrics
+
+  - job_name: redis
+    # redis-exporter not in stack — placeholder for when added
+    static_configs:
+      - targets: []
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
