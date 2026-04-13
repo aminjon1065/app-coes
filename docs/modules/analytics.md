@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-The Analytics module is the read-side reporting context of the Sentinel disaster management platform. It consumes domain events from all operational modules, denormalizes them into a star schema optimized for querying, and serves operational, tactical, and strategic dashboards to decision-makers at every level of the command hierarchy.
+The Analytics module is the read-side reporting context of the CoESCD disaster management platform. It consumes domain events from all operational modules, denormalizes them into a star schema optimized for querying, and serves operational, tactical, and strategic dashboards to decision-makers at every level of the command hierarchy.
 
 Analytics is a pure consumer -- it subscribes to all domain events (`*.v1`) via NATS JetStream durable consumers, transforms them into fact and dimension rows, and never writes back to any operational table. The entire module operates against its own `analytics` schema, isolated from operational concerns.
 

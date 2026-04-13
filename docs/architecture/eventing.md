@@ -1,12 +1,12 @@
 # Event System Architecture
 
-> Sentinel National Disaster Management Platform -- Cross-Module Eventing via NATS JetStream
+> CoESCD National Disaster Management Platform -- Cross-Module Eventing via NATS JetStream
 
 ---
 
 ## 1. Overview
 
-Event-driven architecture is the primary mechanism for cross-module communication in Sentinel. The platform is a NestJS modular monolith composed of 10 bounded contexts (IAM, Incident, Task, Document, Chat, Call, GIS, File, Analytics, Audit) that coordinate exclusively through asynchronous domain events. No module may import another module's service layer; all cross-cutting behavior flows through events.
+Event-driven architecture is the primary mechanism for cross-module communication in CoESCD. The platform is a NestJS modular monolith composed of 10 bounded contexts (IAM, Incident, Task, Document, Chat, Call, GIS, File, Analytics, Audit) that coordinate exclusively through asynchronous domain events. No module may import another module's service layer; all cross-cutting behavior flows through events.
 
 The system provides:
 
@@ -68,13 +68,13 @@ file.scanned.v1
 
 ## 3. Event Envelope
 
-Every event published within Sentinel uses a standard envelope. This envelope is defined once in `packages/contracts/src/events/domain-event.interface.ts` and shared across all modules.
+Every event published within CoESCD uses a standard envelope. This envelope is defined once in `packages/contracts/src/events/domain-event.interface.ts` and shared across all modules.
 
 ### TypeScript Interface
 
 ```typescript
 /**
- * Standard envelope for every domain event in Sentinel.
+ * Standard envelope for every domain event in CoESCD.
  * Generic parameter T carries the event-specific payload.
  */
 export interface DomainEvent<T = unknown> {
@@ -168,7 +168,7 @@ export interface DomainEvent<T = unknown> {
 | Field | Purpose |
 |-------|---------|
 | `id` | Globally unique UUIDv7. Time-ordered so events can be sorted chronologically by ID. Used as the NATS message ID for server-side deduplication, and as the Redis idempotency key on the consumer side. |
-| `type` | Fully qualified event name. Consumers filter on this. Matches the NATS subject (prefixed with `sentinel.`). |
+| `type` | Fully qualified event name. Consumers filter on this. Matches the NATS subject (prefixed with `coescd.`). |
 | `occurredAt` | The wall-clock time when the domain event happened (not when it was published to NATS). Millisecond precision is required because SLA breach calculations depend on it. |
 | `tenantId` | Multi-tenancy discriminator. Every query, every consumer filter, every authorization check scopes on this. |
 | `actor` | Who or what triggered the action. `break_glass` is a special escalation mode where a user bypasses normal RBAC. `system` covers cron jobs, SLA timers, and automated workflows. |
@@ -188,18 +188,18 @@ One stream per bounded context, plus infrastructure streams for audit and dead l
 
 | Stream Name | Subjects | Retention | MaxAge | MaxBytes | Storage | Replicas |
 |---|---|---|---|---|---|---|
-| `STREAM_IAM` | `sentinel.iam.>` | limits | 7d | 100GB | file | 3 |
-| `STREAM_INCIDENT` | `sentinel.incident.>` | limits | 7d | 100GB | file | 3 |
-| `STREAM_TASK` | `sentinel.task.>` | limits | 7d | 100GB | file | 3 |
-| `STREAM_DOCUMENT` | `sentinel.document.>` | limits | 7d | 100GB | file | 3 |
-| `STREAM_CHAT` | `sentinel.chat.>` | limits | 7d | 100GB | file | 3 |
-| `STREAM_CALL` | `sentinel.call.>` | limits | 7d | 100GB | file | 3 |
-| `STREAM_GIS` | `sentinel.gis.>` | limits | 7d | 100GB | file | 3 |
-| `STREAM_FILE` | `sentinel.file.>` | limits | 7d | 100GB | file | 3 |
-| `STREAM_ANALYTICS` | `sentinel.analytics.>` | limits | 7d | 50GB | file | 3 |
-| `STREAM_NOTIFICATION` | `sentinel.notification.>` | limits | 7d | 50GB | file | 3 |
-| `STREAM_AUDIT` | `sentinel.audit.>` | limits | 30d | 500GB | file | 3 |
-| `STREAM_DLQ` | `sentinel.dlq.>` | limits | 30d | 100GB | file | 3 |
+| `STREAM_IAM` | `coescd.iam.>` | limits | 7d | 100GB | file | 3 |
+| `STREAM_INCIDENT` | `coescd.incident.>` | limits | 7d | 100GB | file | 3 |
+| `STREAM_TASK` | `coescd.task.>` | limits | 7d | 100GB | file | 3 |
+| `STREAM_DOCUMENT` | `coescd.document.>` | limits | 7d | 100GB | file | 3 |
+| `STREAM_CHAT` | `coescd.chat.>` | limits | 7d | 100GB | file | 3 |
+| `STREAM_CALL` | `coescd.call.>` | limits | 7d | 100GB | file | 3 |
+| `STREAM_GIS` | `coescd.gis.>` | limits | 7d | 100GB | file | 3 |
+| `STREAM_FILE` | `coescd.file.>` | limits | 7d | 100GB | file | 3 |
+| `STREAM_ANALYTICS` | `coescd.analytics.>` | limits | 7d | 50GB | file | 3 |
+| `STREAM_NOTIFICATION` | `coescd.notification.>` | limits | 7d | 50GB | file | 3 |
+| `STREAM_AUDIT` | `coescd.audit.>` | limits | 30d | 500GB | file | 3 |
+| `STREAM_DLQ` | `coescd.dlq.>` | limits | 30d | 100GB | file | 3 |
 
 Replicas are set to 3 for all streams in production (NATS cluster of 3+ nodes). In development, replicas default to 1.
 
@@ -223,33 +223,33 @@ After `MaxDeliver` is exhausted, the outbox relay's DLQ advisor publishes the fa
 
 | Header | Value |
 |---|---|
-| `Sentinel-Original-Stream` | e.g., `STREAM_INCIDENT` |
-| `Sentinel-Original-Subject` | e.g., `sentinel.incident.severity_changed.v1` |
-| `Sentinel-Last-Error` | Stringified error from last attempt |
-| `Sentinel-Attempt-Count` | `8` |
-| `Sentinel-First-Attempt-At` | ISO 8601 timestamp |
-| `Sentinel-Last-Attempt-At` | ISO 8601 timestamp |
+| `CoESCD-Original-Stream` | e.g., `STREAM_INCIDENT` |
+| `CoESCD-Original-Subject` | e.g., `coescd.incident.severity_changed.v1` |
+| `CoESCD-Last-Error` | Stringified error from last attempt |
+| `CoESCD-Attempt-Count` | `8` |
+| `CoESCD-First-Attempt-At` | ISO 8601 timestamp |
+| `CoESCD-Last-Attempt-At` | ISO 8601 timestamp |
 
 ### 4.3 Subject Naming
 
 NATS subjects follow the pattern:
 
 ```
-sentinel.<domain>.<entity>.<action>.<version>
+coescd.<domain>.<entity>.<action>.<version>
 ```
 
 Examples:
 
 ```
-sentinel.incident.created.v1
-sentinel.incident.severity_changed.v1
-sentinel.iam.user.deactivated.v1
-sentinel.task.sla_breached.v1
-sentinel.chat.message.posted.v1
-sentinel.gis.feature.bulk_imported.v1
+coescd.incident.created.v1
+coescd.incident.severity_changed.v1
+coescd.iam.user.deactivated.v1
+coescd.task.sla_breached.v1
+coescd.chat.message.posted.v1
+coescd.gis.feature.bulk_imported.v1
 ```
 
-The `sentinel.` prefix scopes all platform events and prevents collisions with any infrastructure subjects.
+The `coescd.` prefix scopes all platform events and prevents collisions with any infrastructure subjects.
 
 ### 4.4 NestJS Stream and Consumer Setup
 
@@ -275,18 +275,18 @@ const NANOS_PER_SEC = 1_000_000_000;
 const NANOS_PER_DAY = 86_400 * NANOS_PER_SEC;
 
 const STREAM_DEFINITIONS: StreamDefinition[] = [
-  { name: 'STREAM_IAM',          subjects: ['sentinel.iam.>'],          maxAge: 7  * NANOS_PER_DAY, maxBytes: 100 * 1e9, retention: RetentionPolicy.Limits, storage: StorageType.File, numReplicas: 3 },
-  { name: 'STREAM_INCIDENT',     subjects: ['sentinel.incident.>'],     maxAge: 7  * NANOS_PER_DAY, maxBytes: 100 * 1e9, retention: RetentionPolicy.Limits, storage: StorageType.File, numReplicas: 3 },
-  { name: 'STREAM_TASK',         subjects: ['sentinel.task.>'],         maxAge: 7  * NANOS_PER_DAY, maxBytes: 100 * 1e9, retention: RetentionPolicy.Limits, storage: StorageType.File, numReplicas: 3 },
-  { name: 'STREAM_DOCUMENT',     subjects: ['sentinel.document.>'],     maxAge: 7  * NANOS_PER_DAY, maxBytes: 100 * 1e9, retention: RetentionPolicy.Limits, storage: StorageType.File, numReplicas: 3 },
-  { name: 'STREAM_CHAT',         subjects: ['sentinel.chat.>'],         maxAge: 7  * NANOS_PER_DAY, maxBytes: 100 * 1e9, retention: RetentionPolicy.Limits, storage: StorageType.File, numReplicas: 3 },
-  { name: 'STREAM_CALL',         subjects: ['sentinel.call.>'],         maxAge: 7  * NANOS_PER_DAY, maxBytes: 100 * 1e9, retention: RetentionPolicy.Limits, storage: StorageType.File, numReplicas: 3 },
-  { name: 'STREAM_GIS',          subjects: ['sentinel.gis.>'],          maxAge: 7  * NANOS_PER_DAY, maxBytes: 100 * 1e9, retention: RetentionPolicy.Limits, storage: StorageType.File, numReplicas: 3 },
-  { name: 'STREAM_FILE',         subjects: ['sentinel.file.>'],         maxAge: 7  * NANOS_PER_DAY, maxBytes: 100 * 1e9, retention: RetentionPolicy.Limits, storage: StorageType.File, numReplicas: 3 },
-  { name: 'STREAM_ANALYTICS',    subjects: ['sentinel.analytics.>'],    maxAge: 7  * NANOS_PER_DAY, maxBytes: 50  * 1e9, retention: RetentionPolicy.Limits, storage: StorageType.File, numReplicas: 3 },
-  { name: 'STREAM_NOTIFICATION', subjects: ['sentinel.notification.>'], maxAge: 7  * NANOS_PER_DAY, maxBytes: 50  * 1e9, retention: RetentionPolicy.Limits, storage: StorageType.File, numReplicas: 3 },
-  { name: 'STREAM_AUDIT',        subjects: ['sentinel.audit.>'],        maxAge: 30 * NANOS_PER_DAY, maxBytes: 500 * 1e9, retention: RetentionPolicy.Limits, storage: StorageType.File, numReplicas: 3 },
-  { name: 'STREAM_DLQ',          subjects: ['sentinel.dlq.>'],          maxAge: 30 * NANOS_PER_DAY, maxBytes: 100 * 1e9, retention: RetentionPolicy.Limits, storage: StorageType.File, numReplicas: 3 },
+  { name: 'STREAM_IAM',          subjects: ['coescd.iam.>'],          maxAge: 7  * NANOS_PER_DAY, maxBytes: 100 * 1e9, retention: RetentionPolicy.Limits, storage: StorageType.File, numReplicas: 3 },
+  { name: 'STREAM_INCIDENT',     subjects: ['coescd.incident.>'],     maxAge: 7  * NANOS_PER_DAY, maxBytes: 100 * 1e9, retention: RetentionPolicy.Limits, storage: StorageType.File, numReplicas: 3 },
+  { name: 'STREAM_TASK',         subjects: ['coescd.task.>'],         maxAge: 7  * NANOS_PER_DAY, maxBytes: 100 * 1e9, retention: RetentionPolicy.Limits, storage: StorageType.File, numReplicas: 3 },
+  { name: 'STREAM_DOCUMENT',     subjects: ['coescd.document.>'],     maxAge: 7  * NANOS_PER_DAY, maxBytes: 100 * 1e9, retention: RetentionPolicy.Limits, storage: StorageType.File, numReplicas: 3 },
+  { name: 'STREAM_CHAT',         subjects: ['coescd.chat.>'],         maxAge: 7  * NANOS_PER_DAY, maxBytes: 100 * 1e9, retention: RetentionPolicy.Limits, storage: StorageType.File, numReplicas: 3 },
+  { name: 'STREAM_CALL',         subjects: ['coescd.call.>'],         maxAge: 7  * NANOS_PER_DAY, maxBytes: 100 * 1e9, retention: RetentionPolicy.Limits, storage: StorageType.File, numReplicas: 3 },
+  { name: 'STREAM_GIS',          subjects: ['coescd.gis.>'],          maxAge: 7  * NANOS_PER_DAY, maxBytes: 100 * 1e9, retention: RetentionPolicy.Limits, storage: StorageType.File, numReplicas: 3 },
+  { name: 'STREAM_FILE',         subjects: ['coescd.file.>'],         maxAge: 7  * NANOS_PER_DAY, maxBytes: 100 * 1e9, retention: RetentionPolicy.Limits, storage: StorageType.File, numReplicas: 3 },
+  { name: 'STREAM_ANALYTICS',    subjects: ['coescd.analytics.>'],    maxAge: 7  * NANOS_PER_DAY, maxBytes: 50  * 1e9, retention: RetentionPolicy.Limits, storage: StorageType.File, numReplicas: 3 },
+  { name: 'STREAM_NOTIFICATION', subjects: ['coescd.notification.>'], maxAge: 7  * NANOS_PER_DAY, maxBytes: 50  * 1e9, retention: RetentionPolicy.Limits, storage: StorageType.File, numReplicas: 3 },
+  { name: 'STREAM_AUDIT',        subjects: ['coescd.audit.>'],        maxAge: 30 * NANOS_PER_DAY, maxBytes: 500 * 1e9, retention: RetentionPolicy.Limits, storage: StorageType.File, numReplicas: 3 },
+  { name: 'STREAM_DLQ',          subjects: ['coescd.dlq.>'],          maxAge: 30 * NANOS_PER_DAY, maxBytes: 100 * 1e9, retention: RetentionPolicy.Limits, storage: StorageType.File, numReplicas: 3 },
 ];
 
 @Injectable()
@@ -557,8 +557,8 @@ export class OutboxRelayService implements OnModuleDestroy {
 
     for (const row of rows) {
       try {
-        // Convert event type to NATS subject: incident.created.v1 -> sentinel.incident.created.v1
-        const subject = `sentinel.${row.type}`;
+        // Convert event type to NATS subject: incident.created.v1 -> coescd.incident.created.v1
+        const subject = `coescd.${row.type}`;
         const payload = JSON.stringify(row.payload);
 
         // Use event ID as NATS message ID for server-side deduplication.
@@ -718,7 +718,7 @@ Every consumer maintains a processed event set in Redis. Since NATS provides at-
 
 ### 6.2 Two-Phase Deduplication
 
-A naive `SETNX` has an edge case: if the key is set but processing fails, retries will see the key and skip the event, causing silent data loss. Sentinel uses a two-phase approach:
+A naive `SETNX` has an edge case: if the key is set but processing fails, retries will see the key and skip the event, causing silent data loss. CoESCD uses a two-phase approach:
 
 **Phase 1 -- Acquire processing lock:**
 Set a short-lived key (5 minutes) to indicate "processing in progress."
@@ -2885,28 +2885,28 @@ The DLQ stream (`STREAM_DLQ`) captures messages that have exhausted all redelive
 | Property | Value |
 |---|---|
 | Stream Name | `STREAM_DLQ` |
-| Subjects | `sentinel.dlq.>` |
+| Subjects | `coescd.dlq.>` |
 | Retention | limits |
 | MaxAge | 30 days |
 | MaxBytes | 100GB |
 | Storage | file |
 | Replicas | 3 |
 
-**DLQ subject pattern:** `sentinel.dlq.<original_domain>.<original_entity>.<original_action>.<version>`
+**DLQ subject pattern:** `coescd.dlq.<original_domain>.<original_entity>.<original_action>.<version>`
 
-Example: an `incident.severity_changed.v1` message that failed 8 times arrives at `sentinel.dlq.incident.severity_changed.v1`.
+Example: an `incident.severity_changed.v1` message that failed 8 times arrives at `coescd.dlq.incident.severity_changed.v1`.
 
 **Preserved headers on DLQ messages:**
 
 | Header | Example Value |
 |---|---|
-| `Sentinel-Original-Stream` | `STREAM_INCIDENT` |
-| `Sentinel-Original-Subject` | `sentinel.incident.severity_changed.v1` |
-| `Sentinel-Consumer-Name` | `chat-incident.severity_changed.v1` |
-| `Sentinel-Last-Error` | `TypeError: Cannot read property 'channelId' of undefined` |
-| `Sentinel-Attempt-Count` | `8` |
-| `Sentinel-First-Attempt-At` | `2026-03-15T14:32:08.000Z` |
-| `Sentinel-Last-Attempt-At` | `2026-03-15T14:36:23.000Z` |
+| `CoESCD-Original-Stream` | `STREAM_INCIDENT` |
+| `CoESCD-Original-Subject` | `coescd.incident.severity_changed.v1` |
+| `CoESCD-Consumer-Name` | `chat-incident.severity_changed.v1` |
+| `CoESCD-Last-Error` | `TypeError: Cannot read property 'channelId' of undefined` |
+| `CoESCD-Attempt-Count` | `8` |
+| `CoESCD-First-Attempt-At` | `2026-03-15T14:32:08.000Z` |
+| `CoESCD-Last-Attempt-At` | `2026-03-15T14:36:23.000Z` |
 
 ### 8.2 DLQ Admin UI
 
@@ -2941,12 +2941,12 @@ The Admin Panel exposes a "Event Health" section under **Settings > System > Eve
 
 | Condition | Severity | Alert Channel |
 |---|---|---|
-| DLQ depth > 100 messages | WARNING | Slack #sentinel-ops, PagerDuty (P3) |
-| DLQ depth > 500 messages | CRITICAL | Slack #sentinel-ops, PagerDuty (P1) |
-| DLQ growth rate > 10 messages/min sustained for 5min | CRITICAL | Slack #sentinel-ops, PagerDuty (P1) |
-| Consumer lag > 30s sustained for 5min | WARNING | Slack #sentinel-ops |
-| Consumer lag > 5min sustained for 2min | CRITICAL | Slack #sentinel-ops, PagerDuty (P2) |
-| Consumer offline (no heartbeat for 60s) | CRITICAL | Slack #sentinel-ops, PagerDuty (P2) |
+| DLQ depth > 100 messages | WARNING | Slack #coescd-ops, PagerDuty (P3) |
+| DLQ depth > 500 messages | CRITICAL | Slack #coescd-ops, PagerDuty (P1) |
+| DLQ growth rate > 10 messages/min sustained for 5min | CRITICAL | Slack #coescd-ops, PagerDuty (P1) |
+| Consumer lag > 30s sustained for 5min | WARNING | Slack #coescd-ops |
+| Consumer lag > 5min sustained for 2min | CRITICAL | Slack #coescd-ops, PagerDuty (P2) |
+| Consumer offline (no heartbeat for 60s) | CRITICAL | Slack #coescd-ops, PagerDuty (P2) |
 
 Metrics are exposed via Prometheus:
 
@@ -3340,7 +3340,7 @@ interface IncidentSeverityChangedV2Data {
 
 **Step 4: Deploy producer**
 
-After deployment, both `sentinel.incident.severity_changed.v1` and `sentinel.incident.severity_changed.v2` flow through NATS. Existing consumers continue processing v1 without changes.
+After deployment, both `coescd.incident.severity_changed.v1` and `coescd.incident.severity_changed.v2` flow through NATS. Existing consumers continue processing v1 without changes.
 
 **Step 5: Migrate consumers one by one**
 
@@ -3497,7 +3497,7 @@ export class IncidentService {
 @Injectable()
 export class ChatSeverityChangedConsumer extends IdempotentConsumer {
   protected readonly consumerName = 'chat-incident.severity_changed.v1';
-  // filterSubject: 'sentinel.incident.severity_changed.v1'
+  // filterSubject: 'coescd.incident.severity_changed.v1'
 
   protected async handle(event: DomainEvent<IncidentSeverityChangedV1Data>): Promise<void> {
     await this.chatService.postSystemMessage(
@@ -3511,7 +3511,7 @@ export class ChatSeverityChangedConsumer extends IdempotentConsumer {
 @Injectable()
 export class ChatSeverityChangedConsumer extends IdempotentConsumer {
   protected readonly consumerName = 'chat-incident.severity_changed.v2';
-  // filterSubject: 'sentinel.incident.severity_changed.v2'
+  // filterSubject: 'coescd.incident.severity_changed.v2'
 
   protected async handle(event: DomainEvent<IncidentSeverityChangedV2Data>): Promise<void> {
     const icon = event.data.reasonCategory === 'automated_rule' ? '[AUTO]' : '';

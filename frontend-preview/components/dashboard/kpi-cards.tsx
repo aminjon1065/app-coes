@@ -11,7 +11,7 @@ function KpiCard({ stat }: { stat: KpiStat }) {
     <div
       className={cn(
         "relative flex flex-col gap-1.5 p-4 rounded-md border",
-        "bg-sentinel-card border-sentinel-border",
+        "bg-coescd-card border-coescd-border",
         isDanger && "border-severity-4/30 bg-severity-bg-4",
         isWarning && "border-severity-2/30 bg-severity-bg-2",
         isSuccess && "border-severity-1/20"
@@ -25,7 +25,7 @@ function KpiCard({ stat }: { stat: KpiStat }) {
         </span>
       )}
 
-      <p className="text-2xs font-semibold tracking-widest text-sentinel-subtle uppercase">
+      <p className="text-2xs font-semibold tracking-widest text-coescd-subtle uppercase">
         {stat.label}
       </p>
 
@@ -36,13 +36,13 @@ function KpiCard({ stat }: { stat: KpiStat }) {
             isDanger && "text-severity-4",
             isWarning && "text-severity-2",
             isSuccess && "text-severity-1",
-            !isDanger && !isWarning && !isSuccess && "text-sentinel-text"
+            !isDanger && !isWarning && !isSuccess && "text-coescd-text"
           )}
         >
           {stat.value}
         </span>
         {isSuccess && stat.subValue && (
-          <span className="text-sm text-sentinel-muted mb-0.5 font-mono">{stat.subValue}</span>
+          <span className="text-sm text-coescd-muted mb-0.5 font-mono">{stat.subValue}</span>
         )}
       </div>
 
@@ -50,14 +50,14 @@ function KpiCard({ stat }: { stat: KpiStat }) {
       <div className="flex items-center gap-1 text-xs">
         {stat.trend === "up" && (
           <TrendingUp
-            className={cn("w-3 h-3", isDanger ? "text-severity-4" : "text-sentinel-muted")}
+            className={cn("w-3 h-3", isDanger ? "text-severity-4" : "text-coescd-muted")}
           />
         )}
         {stat.trend === "down" && (
           <TrendingDown className="w-3 h-3 text-severity-1" />
         )}
         {stat.trend === "neutral" && (
-          <Minus className="w-3 h-3 text-sentinel-subtle" />
+          <Minus className="w-3 h-3 text-coescd-subtle" />
         )}
         <span
           className={cn(
@@ -65,7 +65,7 @@ function KpiCard({ stat }: { stat: KpiStat }) {
             isDanger && stat.trend === "up" && "text-severity-4",
             isWarning && "text-severity-2",
             stat.trend === "down" && "text-severity-1",
-            stat.trend === "neutral" && "text-sentinel-subtle"
+            stat.trend === "neutral" && "text-coescd-subtle"
           )}
         >
           {stat.trendLabel}
@@ -74,7 +74,7 @@ function KpiCard({ stat }: { stat: KpiStat }) {
 
       {/* Progress bar for ON DUTY */}
       {isSuccess && (
-        <div className="mt-1 h-1 rounded-sm bg-sentinel-border overflow-hidden">
+        <div className="mt-1 h-1 rounded-sm bg-coescd-border overflow-hidden">
           <div
             className="h-full bg-severity-1 rounded-sm transition-all"
             style={{ width: "82%" }}

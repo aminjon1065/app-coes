@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-The File module provides secure file storage, antivirus scanning, and variant generation for all platform attachments within the Sentinel disaster management platform. It is the single source of truth for binary content: every file uploaded by any module (Communication, Document, Incident, Task) is stored, scanned, and served through this module.
+The File module provides secure file storage, antivirus scanning, and variant generation for all platform attachments within the CoESCD disaster management platform. It is the single source of truth for binary content: every file uploaded by any module (Communication, Document, Incident, Task) is stored, scanned, and served through this module.
 
 ### Ownership Boundaries
 

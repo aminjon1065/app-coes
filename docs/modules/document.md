@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-The Document module manages the full lifecycle of official documents within the Sentinel disaster management platform. It handles creation, versioning, approval workflows, digital signatures, and publication of formal documents including orders, situation reports, evacuation plans, resource allocation directives, and post-incident reports.
+The Document module manages the full lifecycle of official documents within the CoESCD disaster management platform. It handles creation, versioning, approval workflows, digital signatures, and publication of formal documents including orders, situation reports, evacuation plans, resource allocation directives, and post-incident reports.
 
 Documents are the authoritative written record of decisions and directives during incident response. They carry classification levels, require approval chains with quorum-based policies, and support digital signatures for legal validity.
 

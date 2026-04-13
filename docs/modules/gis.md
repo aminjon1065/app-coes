@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-The GIS module is the spatial awareness engine of the Sentinel disaster management platform. It provides geographic information management for hazard mapping, resource tracking, evacuation route planning, and incident-linked spatial analysis. Every map-based visualization, spatial query, and geographic overlay in the platform is powered by this module.
+The GIS module is the spatial awareness engine of the CoESCD disaster management platform. It provides geographic information management for hazard mapping, resource tracking, evacuation route planning, and incident-linked spatial analysis. Every map-based visualization, spatial query, and geographic overlay in the platform is powered by this module.
 
 ### Ownership Boundaries
 
@@ -1406,7 +1406,7 @@ async handleIncidentCreated(event: IncidentCreatedEvent): Promise<void> {
     style: {
       fill: { color: '#FF0000', opacity: 0.2 },
       stroke: { color: '#FF0000', width: 3, opacity: 0.8 },
-      icon: { url: 'https://assets.sentinel.app/icons/incident-marker.png', size: [32, 32], anchor: [0.5, 1.0] },
+      icon: { url: 'https://assets.coescd.app/icons/incident-marker.png', size: [32, 32], anchor: [0.5, 1.0] },
       label: { field: 'name', fontSize: 12, color: '#CC0000', haloColor: '#FFFFFF', haloWidth: 2 },
     },
     incidentId,

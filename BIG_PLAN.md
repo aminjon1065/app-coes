@@ -1,10 +1,10 @@
 # BIG_PLAN.md
-## Sentinel — National Disaster Management Platform
+## CoESCD — National Disaster Management Platform
 ### Implementation-Ready Architecture, Domain & Product Specification (v1.0)
 
 > **Audience:** Backend, Frontend, DevOps, Security, SRE, Product, Design.
 > **Status:** Source-of-truth for build. Every section is binding.
-> **Codename:** `sentinel`
+> **Codename:** `coescd`
 > **Deployment posture:** Sovereign / on-prem / air-gap capable.
 
 ---
@@ -35,11 +35,11 @@
 
 ## 1.1 Mission Context
 
-Sentinel is the operational nervous system of a national civil protection agency (KChS-class). It is used **during emergencies** — earthquakes, floods, industrial accidents, wildfires, mass casualty events, CBRN incidents, and large public gatherings. It is also used in **peacetime** for drills, planning, and post-incident analysis.
+CoESCD is the operational nervous system of a national civil protection agency (KChS-class). It is used **during emergencies** — earthquakes, floods, industrial accidents, wildfires, mass casualty events, CBRN incidents, and large public gatherings. It is also used in **peacetime** for drills, planning, and post-incident analysis.
 
-The defining constraint of Sentinel is **time-to-decision under stress**. Operators are not power users; they are humans under duress, often working 16-hour shifts, switching between phones, tablets, and 27" command-room displays. Every screen must be **glanceable in under 3 seconds** and **actionable in under 2 clicks**.
+The defining constraint of CoESCD is **time-to-decision under stress**. Operators are not power users; they are humans under duress, often working 16-hour shifts, switching between phones, tablets, and 27" command-room displays. Every screen must be **glanceable in under 3 seconds** and **actionable in under 2 clicks**.
 
-This document treats Sentinel as a *product*, not a project. The reference benchmark is not legacy government software — it is **Linear**, **Vercel**, **Notion**, **Datadog**, and **Palantir Foundry**.
+This document treats CoESCD as a *product*, not a project. The reference benchmark is not legacy government software — it is **Linear**, **Vercel**, **Notion**, **Datadog**, and **Palantir Foundry**.
 
 ## 1.2 User Roles (Personas)
 
@@ -995,7 +995,7 @@ Versioning is **never** removed. Breaking changes ship a `.v2` while `.v1` keeps
 ## 6.4 Transport — NATS JetStream
 
 - One stream per domain: `STREAM_INCIDENT`, `STREAM_TASK`, ...
-- Subjects: `sentinel.<domain>.>`.
+- Subjects: `coescd.<domain>.>`.
 - Retention: `interest` for ephemeral, `limits` (7d, 100GB) for durable.
 - Each consumer is **durable**, **explicit ack**, `MaxDeliver=8`, exponential backoff (1s → 2 → 4 → 8 → 16 → 32 → 64 → 128).
 - After `MaxDeliver`, message routed to `STREAM_DLQ` with reason header.
@@ -1261,7 +1261,7 @@ CREATE TABLE analytics.fact_task_sla (
 - **Tactical** (IC): per-incident burn-down of tasks, time to first response, comm volume.
 - **Strategic** (Ministry): trend by category, regional heat-map, MTTR over time, drills vs real.
 
-All built as Sentinel-native React pages on top of `/api/v1/analytics/*`. No third-party BI tool exposed to end users (audit and access control reasons). For analysts, an internal SQL workbench is exposed against a **read-replica** of analytics schema only.
+All built as CoESCD-native React pages on top of `/api/v1/analytics/*`. No third-party BI tool exposed to end users (audit and access control reasons). For analysts, an internal SQL workbench is exposed against a **read-replica** of analytics schema only.
 
 ## 10.4 Reporting
 
@@ -1633,7 +1633,7 @@ GitHub Actions / GitLab CI pipeline:
 - **Backups:** WAL streaming + 6-hourly base backups, kept 30 days locally + 90 days off-site.
 - **DR site:** warm standby, async replication, lag monitored.
 - **RPO ≤ 60 s, RTO ≤ 15 min.**
-- **DR drill** quarterly: full failover exercise with measured times, results filed as a post-incident report inside Sentinel itself.
+- **DR drill** quarterly: full failover exercise with measured times, results filed as a post-incident report inside CoESCD itself.
 - **Game days:** monthly chaos engineering — kill random pods, partition NATS, throttle DB — and observe SLOs hold.
 
 ---
@@ -1803,7 +1803,7 @@ Two modes, user-toggleable, default **compact** for ops, **comfortable** for adm
 
 ### 16.3.7 Tables (the workhorse)
 
-Sentinel runs on tables. They follow a strict pattern:
+CoESCD runs on tables. They follow a strict pattern:
 
 - Sticky header.
 - Zebra stripes off by default; replaced by 1px row dividers.
@@ -1826,7 +1826,7 @@ Sentinel runs on tables. They follow a strict pattern:
 
 - **Built on shadcn/ui.** We extend, never fork. Each component lives in `packages/ui` with:
   - the shadcn primitive
-  - an Sentinel-themed wrapper
+  - an CoESCD-themed wrapper
   - a Storybook entry with all variants
 - **No visual clutter.** Max 3 actions per card header; everything else in a `…` menu.
 - **Consistent spacing.** Padding inside a card is *always* 16 (compact) or 24 (comfortable). Never bespoke.

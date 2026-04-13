@@ -1,4 +1,4 @@
-# Sentinel -- Deployment and Operations Architecture
+# CoESCD -- Deployment and Operations Architecture
 
 > National Disaster Management Platform  
 > NestJS Modular Monolith on Kubernetes  
@@ -23,7 +23,7 @@
 
 ## 1. Repository Layout
 
-The Sentinel platform is organized as a pnpm + Nx monorepo. Every directory has a single, clear responsibility.
+The CoESCD platform is organized as a pnpm + Nx monorepo. Every directory has a single, clear responsibility.
 
 ```
 sentinel/
@@ -279,11 +279,11 @@ version: "3.9"
 services:
   postgres:
     image: postgis/postgis:16-3.4
-    container_name: sentinel-postgres
+    container_name: coescd-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: dev
-      POSTGRES_DB: sentinel_dev
+      POSTGRES_DB: coescd_dev
     ports:
       - "5432:5432"
     volumes:
@@ -306,7 +306,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: sentinel-redis
+    container_name: coescd-redis
     ports:
       - "6379:6379"
     command: >
@@ -324,7 +324,7 @@ services:
 
   nats:
     image: nats:2.10-alpine
-    container_name: sentinel-nats
+    container_name: coescd-nats
     command:
       - "-js"
       - "-m"
@@ -343,11 +343,11 @@ services:
 
   minio:
     image: minio/minio:latest
-    container_name: sentinel-minio
+    container_name: coescd-minio
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: sentinel
-      MINIO_ROOT_PASSWORD: sentinel_dev
+      MINIO_ROOT_PASSWORD: coescd_dev
     ports:
       - "9000:9000"   # API
       - "9001:9001"   # Console
@@ -361,24 +361,24 @@ services:
 
   minio-init:
     image: minio/mc:latest
-    container_name: sentinel-minio-init
+    container_name: coescd-minio-init
     depends_on:
       minio:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-        mc alias set sentinel http://minio:9000 sentinel sentinel_dev;
-        mc mb --ignore-existing sentinel/sentinel-uploads;
-        mc mb --ignore-existing sentinel/sentinel-documents;
-        mc mb --ignore-existing sentinel/sentinel-exports;
-        mc mb --ignore-existing sentinel/sentinel-avatars;
-        mc anonymous set download sentinel/sentinel-avatars;
+        mc alias set sentinel http://minio:9000 sentinel coescd_dev;
+        mc mb --ignore-existing sentinel/coescd-uploads;
+        mc mb --ignore-existing sentinel/coescd-documents;
+        mc mb --ignore-existing sentinel/coescd-exports;
+        mc mb --ignore-existing sentinel/coescd-avatars;
+        mc anonymous set download sentinel/coescd-avatars;
         exit 0;
       "
 
   opensearch:
     image: opensearchproject/opensearch:2
-    container_name: sentinel-opensearch
+    container_name: coescd-opensearch
     environment:
       - discovery.type=single-node
       - DISABLE_SECURITY_PLUGIN=true
@@ -395,7 +395,7 @@ services:
 
   opensearch-dashboards:
     image: opensearchproject/opensearch-dashboards:2
-    container_name: sentinel-opensearch-dashboards
+    container_name: coescd-opensearch-dashboards
     environment:
       - OPENSEARCH_HOSTS=["http://opensearch:9200"]
       - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
@@ -407,7 +407,7 @@ services:
 
   mailpit:
     image: axllent/mailpit:latest
-    container_name: sentinel-mailpit
+    container_name: coescd-mailpit
     ports:
       - "1025:1025"   # SMTP
       - "8025:8025"   # Web UI
@@ -430,7 +430,7 @@ volumes:
 | PostgreSQL | `localhost:5432` | User: `postgres`, Pass: `dev` |
 | Redis | `localhost:6379` | No auth in dev |
 | NATS | `localhost:4222` (client), `localhost:8222` (monitor) | JetStream enabled |
-| MinIO API | `localhost:9000` | User: `sentinel`, Pass: `sentinel_dev` |
+| MinIO API | `localhost:9000` | User: `coescd`, Pass: `coescd_dev` |
 | MinIO Console | `localhost:9001` | Browser UI |
 | OpenSearch | `localhost:9200` | Security disabled in dev |
 | OpenSearch Dashboards | `localhost:5601` | Query explorer |
@@ -441,7 +441,7 @@ volumes:
 
 ```bash
 # 1. Clone the repository
-git clone git@github.com:your-org/sentinel.git
+git clone git@github.com:your-org/coescd.git
 cd sentinel
 
 # 2. Enable corepack (pins pnpm version from package.json)
@@ -480,13 +480,13 @@ After starting, the services are available at:
 | Realtime | `ws://localhost:3002` |
 | SFU Signaling | `ws://localhost:3003` |
 
-Dev login credentials (from seed): `admin@sentinel.local` / `Admin123!`
+Dev login credentials (from seed): `admin@coescd.local` / `Admin123!`
 
 ### 2.4 .env Template
 
 ```bash
 # ==============================================================================
-# Sentinel -- Environment Configuration
+# CoESCD -- Environment Configuration
 # Copy to .env and fill in values. All variables below are required unless
 # marked [OPTIONAL].
 # ==============================================================================
@@ -505,7 +505,7 @@ DATABASE_HOST=localhost
 DATABASE_PORT=5432
 DATABASE_USER=postgres
 DATABASE_PASSWORD=dev
-DATABASE_NAME=sentinel_dev
+DATABASE_NAME=coescd_dev
 DATABASE_SSL=false                       # true in production
 DATABASE_POOL_SIZE=20
 DATABASE_STATEMENT_TIMEOUT=3000          # ms
@@ -526,12 +526,12 @@ NATS_TLS=false
 # ── MinIO / S3 ───────────────────────────────────────────────────────────────
 S3_ENDPOINT=http://localhost:9000
 S3_ACCESS_KEY=sentinel
-S3_SECRET_KEY=sentinel_dev
+S3_SECRET_KEY=coescd_dev
 S3_REGION=us-east-1
-S3_BUCKET_UPLOADS=sentinel-uploads
-S3_BUCKET_DOCUMENTS=sentinel-documents
-S3_BUCKET_EXPORTS=sentinel-exports
-S3_BUCKET_AVATARS=sentinel-avatars
+S3_BUCKET_UPLOADS=coescd-uploads
+S3_BUCKET_DOCUMENTS=coescd-documents
+S3_BUCKET_EXPORTS=coescd-exports
+S3_BUCKET_AVATARS=coescd-avatars
 S3_FORCE_PATH_STYLE=true                 # required for MinIO
 
 # ── OpenSearch ────────────────────────────────────────────────────────────────
@@ -552,7 +552,7 @@ SMTP_HOST=localhost
 SMTP_PORT=1025
 SMTP_USER=
 SMTP_PASSWORD=
-SMTP_FROM=noreply@sentinel.local
+SMTP_FROM=noreply@coescd.local
 SMTP_TLS=false
 
 # ── SMS [OPTIONAL] ───────────────────────────────────────────────────────────
@@ -576,7 +576,7 @@ MEDIASOUP_WORKERS=4                      # Usually = CPU cores
 
 # ── Observability [OPTIONAL] ─────────────────────────────────────────────────
 # OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
-# OTEL_SERVICE_NAME=sentinel-api
+# OTEL_SERVICE_NAME=coescd-api
 # METRICS_PORT=9090
 ```
 
@@ -616,14 +616,14 @@ CREATE SCHEMA IF NOT EXISTS outbox;
 "db:migrate:rest": "node tools/migrations/run.js --schema=incident,task,geo,comms,notification,resource,document,analytics,integration,outbox",
 "db:seed": "tsx tools/seed/dev-seed.ts",
 "db:reset": "pnpm run db:drop && pnpm run db:create && pnpm run db:migrate && pnpm run db:seed",
-"db:drop": "docker exec sentinel-postgres psql -U postgres -c 'DROP DATABASE IF EXISTS sentinel_dev;'",
-"db:create": "docker exec sentinel-postgres psql -U postgres -c 'CREATE DATABASE sentinel_dev;' && docker exec sentinel-postgres psql -U postgres -d sentinel_dev -f /docker-entrypoint-initdb.d/init.sql"
+"db:drop": "docker exec coescd-postgres psql -U postgres -c 'DROP DATABASE IF EXISTS coescd_dev;'",
+"db:create": "docker exec coescd-postgres psql -U postgres -c 'CREATE DATABASE coescd_dev;' && docker exec coescd-postgres psql -U postgres -d coescd_dev -f /docker-entrypoint-initdb.d/init.sql"
 ```
 
 **Seed data** creates:
 
-- 1 tenant ("Sentinel Dev Agency")
-- Admin user (`admin@sentinel.local` / `Admin123!`)
+- 1 tenant ("CoESCD Dev Agency")
+- Admin user (`admin@coescd.local` / `Admin123!`)
 - 5 sample roles (Admin, Incident Commander, Field Officer, Analyst, Observer)
 - 3 sample incidents with varying severities
 - 10 sample tasks across incidents
@@ -640,7 +640,7 @@ All five applications follow the same four-stage pattern. Below is the canonical
 
 ```dockerfile
 # =============================================================================
-# Sentinel Dockerfile -- Multi-Stage Build
+# CoESCD Dockerfile -- Multi-Stage Build
 # Template for: api | realtime | workers | sfu | web
 # =============================================================================
 
@@ -1241,7 +1241,7 @@ jobs:
         env:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
         with:
-          command: app sync sentinel-staging
+          command: app sync coescd-staging
           options: --grpc-web --server ${{ secrets.ARGOCD_SERVER }}
 
       - name: Wait for rollout
@@ -1249,7 +1249,7 @@ jobs:
         env:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
         with:
-          command: app wait sentinel-staging --health --timeout 300
+          command: app wait coescd-staging --health --timeout 300
           options: --grpc-web --server ${{ secrets.ARGOCD_SERVER }}
 
       - name: Smoke tests
@@ -1317,7 +1317,7 @@ jobs:
         env:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
         with:
-          command: app set sentinel-production -p canary.weight=5
+          command: app set coescd-production -p canary.weight=5
           options: --grpc-web --server ${{ secrets.ARGOCD_SERVER }}
 
       - name: Sync and wait (5%)
@@ -1325,7 +1325,7 @@ jobs:
         env:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
         with:
-          command: app sync sentinel-production
+          command: app sync coescd-production
           options: --grpc-web --server ${{ secrets.ARGOCD_SERVER }}
 
       - name: Observe SLOs (5min)
@@ -1347,7 +1347,7 @@ jobs:
         env:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
         with:
-          command: app set sentinel-production -p canary.weight=25
+          command: app set coescd-production -p canary.weight=25
           options: --grpc-web --server ${{ secrets.ARGOCD_SERVER }}
 
       - name: Observe SLOs (5min at 25%)
@@ -1367,7 +1367,7 @@ jobs:
         env:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
         with:
-          command: app set sentinel-production -p canary.weight=100
+          command: app set coescd-production -p canary.weight=100
           options: --grpc-web --server ${{ secrets.ARGOCD_SERVER }}
 
       - name: Final sync
@@ -1375,7 +1375,7 @@ jobs:
         env:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
         with:
-          command: app sync sentinel-production
+          command: app sync coescd-production
           options: --grpc-web --server ${{ secrets.ARGOCD_SERVER }}
 
       - name: Verify deployment
@@ -1390,7 +1390,7 @@ jobs:
           STATUS=${{ job.status }}
           curl -X POST "${{ secrets.SLACK_WEBHOOK }}" \
             -H 'Content-Type: application/json' \
-            -d "{\"text\":\"Sentinel production deploy ${STATUS}: ${{ github.sha }}\"}"
+            -d "{\"text\":\"CoESCD production deploy ${STATUS}: ${{ github.sha }}\"}"
 ```
 
 ### 4.3 Branch Strategy
@@ -1465,7 +1465,7 @@ infra/k8s/
 │   ├── postgres/
 │   │   └── ... (StatefulSet, PVC, backup CronJob)
 │   ├── redis/
-│   │   └── ... (StatefulSet, PVC, Sentinel config)
+│   │   └── ... (StatefulSet, PVC, CoESCD config)
 │   ├── nats/
 │   │   └── ... (StatefulSet, PVC, JetStream config)
 │   ├── minio/
@@ -1560,12 +1560,12 @@ spec:
             - name: DATABASE_USER
               valueFrom:
                 secretKeyRef:
-                  name: sentinel-db-credentials
+                  name: coescd-db-credentials
                   key: username
             - name: DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: sentinel-db-credentials
+                  name: coescd-db-credentials
                   key: password
             - name: DATABASE_SSL
               value: "true"
@@ -1579,7 +1579,7 @@ spec:
             - name: REDIS_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: sentinel-redis-credentials
+                  name: coescd-redis-credentials
                   key: password
             - name: NATS_URL
               valueFrom:
@@ -1594,12 +1594,12 @@ spec:
             - name: S3_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
-                  name: sentinel-minio-credentials
+                  name: coescd-minio-credentials
                   key: access-key
             - name: S3_SECRET_KEY
               valueFrom:
                 secretKeyRef:
-                  name: sentinel-minio-credentials
+                  name: coescd-minio-credentials
                   key: secret-key
             - name: OPENSEARCH_NODE
               valueFrom:
@@ -1609,12 +1609,12 @@ spec:
             - name: JWT_ACCESS_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: sentinel-jwt-keys
+                  name: coescd-jwt-keys
                   key: access-secret
             - name: JWT_REFRESH_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: sentinel-jwt-keys
+                  name: coescd-jwt-keys
                   key: refresh-secret
           resources:
             requests:
@@ -1798,7 +1798,7 @@ spec:
 
 ### 5.5 NetworkPolicies
 
-Default policy: deny all ingress and egress for every pod in the `sentinel` namespace:
+Default policy: deny all ingress and egress for every pod in the `coescd` namespace:
 
 ```yaml
 # templates/default-deny.yaml
@@ -1848,7 +1848,7 @@ spec:
     - from:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: sentinel-web
+              app.kubernetes.io/name: coescd-web
       ports:
         - port: 3000
           protocol: TCP
@@ -1856,7 +1856,7 @@ spec:
     - from:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: sentinel-workers
+              app.kubernetes.io/name: coescd-workers
       ports:
         - port: 3000
           protocol: TCP
@@ -1887,7 +1887,7 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: sentinel-postgres
+              app.kubernetes.io/name: coescd-postgres
       ports:
         - port: 5432
           protocol: TCP
@@ -1895,7 +1895,7 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: sentinel-redis
+              app.kubernetes.io/name: coescd-redis
       ports:
         - port: 6379
           protocol: TCP
@@ -1903,7 +1903,7 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: sentinel-nats
+              app.kubernetes.io/name: coescd-nats
       ports:
         - port: 4222
           protocol: TCP
@@ -1911,7 +1911,7 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: sentinel-minio
+              app.kubernetes.io/name: coescd-minio
       ports:
         - port: 9000
           protocol: TCP
@@ -1919,7 +1919,7 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: sentinel-opensearch
+              app.kubernetes.io/name: coescd-opensearch
       ports:
         - port: 9200
           protocol: TCP
@@ -1951,7 +1951,7 @@ Secrets are never stored in Git, environment variables, or ConfigMaps as plainte
 apiVersion: external-secrets.io/v1beta1
 kind: ExternalSecret
 metadata:
-  name: sentinel-db-credentials
+  name: coescd-db-credentials
   namespace: sentinel
 spec:
   refreshInterval: 1h
@@ -1959,7 +1959,7 @@ spec:
     name: vault-backend
     kind: ClusterSecretStore
   target:
-    name: sentinel-db-credentials
+    name: coescd-db-credentials
     creationPolicy: Owner
   data:
     - secretKey: username
@@ -1989,7 +1989,7 @@ spec:
           mountPath: "kubernetes"
           role: "sentinel"
           serviceAccountRef:
-            name: sentinel-vault-auth
+            name: coescd-vault-auth
 ```
 
 **Alternative for air-gapped environments: Sealed Secrets**
@@ -2087,7 +2087,7 @@ reclaimPolicy: Retain
 
 ### 7.1 Design Principles
 
-The Sentinel platform is designed to run identically in cloud and on-premises environments. The same Helm chart serves both -- only the `values` file changes.
+The CoESCD platform is designed to run identically in cloud and on-premises environments. The same Helm chart serves both -- only the `values` file changes.
 
 **Key constraints for sovereign deployments:**
 
@@ -2123,15 +2123,15 @@ The Sentinel platform is designed to run identically in cloud and on-premises en
 set -euo pipefail
 
 INTERNAL_REGISTRY="${1:?Usage: $0 <internal-registry-url>}"
-SENTINEL_VERSION="${2:-latest}"
+COESCD_VERSION="${2:-latest}"
 
 # Application images
-SENTINEL_IMAGES=(
-  "sentinel/api:${SENTINEL_VERSION}"
-  "sentinel/realtime:${SENTINEL_VERSION}"
-  "sentinel/workers:${SENTINEL_VERSION}"
-  "sentinel/sfu:${SENTINEL_VERSION}"
-  "sentinel/web:${SENTINEL_VERSION}"
+COESCD_IMAGES=(
+  "sentinel/api:${COESCD_VERSION}"
+  "sentinel/realtime:${COESCD_VERSION}"
+  "sentinel/workers:${COESCD_VERSION}"
+  "sentinel/sfu:${COESCD_VERSION}"
+  "sentinel/web:${COESCD_VERSION}"
 )
 
 # Infrastructure images
@@ -2152,7 +2152,7 @@ INFRA_IMAGES=(
   "longhornio/longhorn-ui:v1.6"
 )
 
-for img in "${SENTINEL_IMAGES[@]}" "${INFRA_IMAGES[@]}"; do
+for img in "${COESCD_IMAGES[@]}" "${INFRA_IMAGES[@]}"; do
   echo "Mirroring ${img} -> ${INTERNAL_REGISTRY}/${img}"
   docker pull "${img}"
   docker tag "${img}" "${INTERNAL_REGISTRY}/${img}"
@@ -2169,9 +2169,9 @@ echo "All images mirrored to ${INTERNAL_REGISTRY}"
 helm dependency update infra/k8s/
 helm package infra/k8s/ -d ./release/
 
-# Transfer release/sentinel-1.2.3.tgz to air-gapped environment
+# Transfer release/coescd-1.2.3.tgz to air-gapped environment
 # Install from local file
-helm install sentinel ./sentinel-1.2.3.tgz \
+helm install sentinel ./coescd-1.2.3.tgz \
   -f values-onprem.yaml \
   --namespace sentinel \
   --create-namespace
@@ -2255,16 +2255,16 @@ systemctl enable --now rke2-agent.service
 export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
 
 # App workers
-kubectl label node worker1 worker2 worker3 sentinel.io/role=app
+kubectl label node worker1 worker2 worker3 coescd.io/role=app
 
 # Data workers
-kubectl label node data1 data2 data3 sentinel.io/role=data
+kubectl label node data1 data2 data3 coescd.io/role=data
 
 # Media workers
-kubectl label node media1 media2 sentinel.io/role=media
+kubectl label node media1 media2 coescd.io/role=media
 
 # MinIO nodes
-kubectl label node minio1 minio2 minio3 minio4 sentinel.io/role=storage
+kubectl label node minio1 minio2 minio3 minio4 coescd.io/role=storage
 ```
 
 **Step 4: Install storage operator (Longhorn)**
@@ -2291,7 +2291,7 @@ kubectl apply -f - <<YAML
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
 metadata:
-  name: sentinel-pool
+  name: coescd-pool
   namespace: metallb-system
 spec:
   addresses:
@@ -2300,11 +2300,11 @@ spec:
 apiVersion: metallb.io/v1beta1
 kind: L2Advertisement
 metadata:
-  name: sentinel-l2
+  name: coescd-l2
   namespace: metallb-system
 spec:
   ipAddressPools:
-    - sentinel-pool
+    - coescd-pool
 YAML
 
 # Nginx Ingress Controller
@@ -2314,7 +2314,7 @@ helm install ingress-nginx ingress-nginx/ingress-nginx \
   --set controller.service.type=LoadBalancer \
   --set controller.config.proxy-body-size=100m \
   --set controller.config.proxy-read-timeout=60 \
-  --set controller.config.websocket-services=sentinel-realtime
+  --set controller.config.websocket-services=coescd-realtime
 ```
 
 **Step 6: Install cert-manager with internal CA**
@@ -2330,14 +2330,14 @@ kubectl apply -f - <<YAML
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
-  name: sentinel-ca-issuer
+  name: coescd-ca-issuer
 spec:
   ca:
-    secretName: sentinel-ca-keypair
+    secretName: coescd-ca-keypair
 YAML
 
 # Create the CA keypair secret (generate with openssl beforehand)
-kubectl create secret tls sentinel-ca-keypair \
+kubectl create secret tls coescd-ca-keypair \
   --cert=ca.crt --key=ca.key \
   -n cert-manager
 ```
@@ -2349,7 +2349,7 @@ kubectl create secret tls sentinel-ca-keypair \
 ./tools/scripts/mirror-images.sh registry.internal.local:5000 v1.2.3
 ```
 
-**Step 8: Deploy Sentinel**
+**Step 8: Deploy CoESCD**
 
 ```bash
 # Create namespace
@@ -2358,7 +2358,7 @@ kubectl create namespace sentinel
 # Install Vault or create Sealed Secrets for credentials
 # (Vault installation omitted for brevity -- use Vault Helm chart)
 
-# Deploy the Sentinel umbrella chart
+# Deploy the CoESCD umbrella chart
 helm install sentinel ./infra/k8s/ \
   --namespace sentinel \
   -f infra/k8s/values-onprem.yaml \
@@ -2374,7 +2374,7 @@ kubectl apply -f - <<YAML
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: sentinel-migrate
+  name: coescd-migrate
   namespace: sentinel
 spec:
   backoffLimit: 3
@@ -2387,19 +2387,19 @@ spec:
           command: ["node", "dist/cli.js", "migrate"]
           envFrom:
             - configMapRef:
-                name: sentinel-api-config
+                name: coescd-api-config
             - secretRef:
-                name: sentinel-db-credentials
+                name: coescd-db-credentials
 YAML
 
-kubectl wait --for=condition=complete job/sentinel-migrate -n sentinel --timeout=120s
+kubectl wait --for=condition=complete job/coescd-migrate -n sentinel --timeout=120s
 
 # Seed initial data
 kubectl apply -f - <<YAML
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: sentinel-seed
+  name: coescd-seed
   namespace: sentinel
 spec:
   backoffLimit: 1
@@ -2409,12 +2409,12 @@ spec:
       containers:
         - name: seed
           image: registry.internal.local:5000/sentinel/api:v1.2.3
-          command: ["node", "dist/cli.js", "seed", "--admin-email=admin@sentinel.gov", "--admin-password=CHANGE_ME"]
+          command: ["node", "dist/cli.js", "seed", "--admin-email=admin@coescd.gov", "--admin-password=CHANGE_ME"]
           envFrom:
             - configMapRef:
-                name: sentinel-api-config
+                name: coescd-api-config
             - secretRef:
-                name: sentinel-db-credentials
+                name: coescd-db-credentials
 YAML
 ```
 
@@ -2431,8 +2431,8 @@ curl -sf "http://${INGRESS_IP}/api/healthz" && echo "Health OK"
 curl -sf "http://${INGRESS_IP}/api/readyz" && echo "Ready OK"
 
 # The seed step already creates the first tenant and admin user
-# Login at https://sentinel.internal/ with the admin credentials
-echo "Installation complete. Access Sentinel at https://sentinel.internal/"
+# Login at https://coescd.internal/ with the admin credentials
+echo "Installation complete. Access CoESCD at https://coescd.internal/"
 ```
 
 ---
@@ -2476,7 +2476,7 @@ export class ResilientHttpService {
   constructor() {
     this.client = axios.create({
       timeout: 10_000,
-      headers: { 'User-Agent': 'Sentinel/1.0' },
+      headers: { 'User-Agent': 'CoESCD/1.0' },
     });
   }
 
@@ -2889,7 +2889,7 @@ Response
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: sentinel-postgres-backup
+  name: coescd-postgres-backup
   namespace: sentinel
 spec:
   schedule: "0 */6 * * *"      # Every 6 hours
@@ -2913,30 +2913,30 @@ spec:
                   wal-g delete retain FULL 20 --confirm
               env:
                 - name: PGHOST
-                  value: sentinel-postgres
+                  value: coescd-postgres
                 - name: PGUSER
                   valueFrom:
                     secretKeyRef:
-                      name: sentinel-db-credentials
+                      name: coescd-db-credentials
                       key: username
                 - name: PGPASSWORD
                   valueFrom:
                     secretKeyRef:
-                      name: sentinel-db-credentials
+                      name: coescd-db-credentials
                       key: password
                 - name: WALG_S3_PREFIX
-                  value: s3://sentinel-backups/postgres/
+                  value: s3://coescd-backups/postgres/
                 - name: AWS_ENDPOINT
-                  value: http://sentinel-minio:9000
+                  value: http://coescd-minio:9000
                 - name: AWS_ACCESS_KEY_ID
                   valueFrom:
                     secretKeyRef:
-                      name: sentinel-minio-credentials
+                      name: coescd-minio-credentials
                       key: access-key
                 - name: AWS_SECRET_ACCESS_KEY
                   valueFrom:
                     secretKeyRef:
-                      name: sentinel-minio-credentials
+                      name: coescd-minio-credentials
                       key: secret-key
                 - name: AWS_S3_FORCE_PATH_STYLE
                   value: "true"
@@ -2954,7 +2954,7 @@ spec:
 ```yaml
 # Prometheus alert rule
 groups:
-  - name: sentinel-dr
+  - name: coescd-dr
     rules:
       - alert: PostgresReplicationLagHigh
         expr: pg_replication_lag_seconds > 30
@@ -2986,19 +2986,19 @@ K8s Cluster                               K8s Cluster (scaled down)
   |- web (2 pods)                           |- web (1 pod, standby)
   |                                         |
   |- PostgreSQL primary ----WAL stream----> |- PostgreSQL standby (hot standby, read-only)
-  |- Redis primary --------replication----> |- Redis replica (Sentinel-managed)
+  |- Redis primary --------replication----> |- Redis replica (CoESCD-managed)
   |- MinIO (4 nodes) -----replication----> |- MinIO (4 nodes, cross-site replication)
   |- NATS (3 nodes)                         |- NATS (3 nodes, independent cluster)
   |- OpenSearch (3 nodes)                   |- OpenSearch (restore from snapshot)
 
-DNS: sentinel.gov.xx -> Primary LB IP
+DNS: coescd.gov.xx -> Primary LB IP
      (manual or health-check failover to DR LB IP)
 ```
 
 **Key design decisions:**
 
 - PostgreSQL: streaming replication (async by default, synchronous optional for zero-RPO at the cost of write latency)
-- Redis: Sentinel-managed replication. DR Redis becomes primary on failover
+- Redis: CoESCD-managed replication. DR Redis becomes primary on failover
 - MinIO: native cross-site replication ensures all objects are present at DR site
 - NATS: separate cluster at DR site. Events are replayed from the outbox table after failover (NATS streams are not cross-replicated)
 - OpenSearch: restored from daily snapshot. Acceptable data lag for search indexes (re-indexing from DB fills the gap)
@@ -3010,7 +3010,7 @@ DNS: sentinel.gov.xx -> Primary LB IP
 ```yaml
 # Prometheus alert triggers PagerDuty
 - alert: PrimarySiteDown
-  expr: up{job="sentinel-api", site="primary"} == 0
+  expr: up{job="coescd-api", site="primary"} == 0
   for: 3m
   labels:
     severity: critical
@@ -3030,7 +3030,7 @@ DNS: sentinel.gov.xx -> Primary LB IP
 set -euo pipefail
 
 echo "=========================================="
-echo "  SENTINEL DR FAILOVER PROCEDURE"
+echo "  COESCD DR FAILOVER PROCEDURE"
 echo "=========================================="
 echo ""
 
@@ -3047,7 +3047,7 @@ echo "  Primary confirmed unreachable."
 
 # Step 2: Verify from multiple vantage points
 echo "[2/10] Cross-checking from secondary monitoring..."
-SECONDARY_CHECK=$(curl -sf "https://monitor.secondary.internal/api/v1/query?query=up{job='sentinel-api',site='primary'}" | jq -r '.data.result[0].value[1]')
+SECONDARY_CHECK=$(curl -sf "https://monitor.secondary.internal/api/v1/query?query=up{job='coescd-api',site='primary'}" | jq -r '.data.result[0].value[1]')
 if [ "$SECONDARY_CHECK" = "1" ]; then
   echo "WARNING: Secondary monitor sees primary as UP. Possible network partition."
   exit 1
@@ -3056,31 +3056,31 @@ echo "  Secondary monitor confirms primary is down."
 
 # Step 3: Promote PostgreSQL standby
 echo "[3/10] Promoting PostgreSQL standby to primary..."
-kubectl exec -n sentinel sentinel-postgres-0 -- \
+kubectl exec -n sentinel coescd-postgres-0 -- \
   pg_ctl promote -D /var/lib/postgresql/data
 echo "  Waiting for promotion..."
 sleep 5
-kubectl exec -n sentinel sentinel-postgres-0 -- \
+kubectl exec -n sentinel coescd-postgres-0 -- \
   psql -U postgres -c "SELECT pg_is_in_recovery();" | grep -q "f" || {
     echo "ERROR: PostgreSQL promotion failed"
     exit 1
   }
 echo "  PostgreSQL promoted successfully."
 
-# Step 4: Update Redis Sentinel
-echo "[4/10] Triggering Redis Sentinel failover..."
-kubectl exec -n sentinel sentinel-redis-sentinel-0 -- \
-  redis-cli -p 26379 SENTINEL FAILOVER sentinel-master
+# Step 4: Update Redis CoESCD
+echo "[4/10] Triggering Redis CoESCD failover..."
+kubectl exec -n sentinel coescd-redis-coescd-0 -- \
+  redis-cli -p 26379 COESCD FAILOVER coescd-master
 sleep 3
 echo "  Redis failover initiated."
 
 # Step 5: Scale up DR application pods
 echo "[5/10] Scaling up DR application pods..."
-kubectl scale deployment -n sentinel sentinel-api --replicas=3
-kubectl scale deployment -n sentinel sentinel-realtime --replicas=3
-kubectl scale deployment -n sentinel sentinel-workers --replicas=2
-kubectl scale deployment -n sentinel sentinel-web --replicas=2
-kubectl scale deployment -n sentinel sentinel-sfu --replicas=2
+kubectl scale deployment -n sentinel coescd-api --replicas=3
+kubectl scale deployment -n sentinel coescd-realtime --replicas=3
+kubectl scale deployment -n sentinel coescd-workers --replicas=2
+kubectl scale deployment -n sentinel coescd-web --replicas=2
+kubectl scale deployment -n sentinel coescd-sfu --replicas=2
 
 echo "  Waiting for pods to be ready..."
 kubectl wait --for=condition=ready pod -l app.kubernetes.io/part-of=sentinel \
@@ -3089,7 +3089,7 @@ echo "  All pods ready."
 
 # Step 6: Redirect ingress
 echo "[6/10] Updating DNS to point to DR site..."
-echo "  ACTION REQUIRED: Update DNS record for sentinel.gov.xx to DR LB IP"
+echo "  ACTION REQUIRED: Update DNS record for coescd.gov.xx to DR LB IP"
 echo "  DR LB IP: $(kubectl get svc -n ingress-nginx ingress-nginx-controller \
   -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
 read -rp "  Press Enter after DNS update is propagated..."
@@ -3104,7 +3104,7 @@ echo "  Health probes passing."
 
 # Step 8: Replay outbox events
 echo "[8/10] Flushing outbox to NATS..."
-kubectl exec -n sentinel deployment/sentinel-api -- \
+kubectl exec -n sentinel deployment/coescd-api -- \
   node dist/cli.js outbox:flush --since="1h"
 echo "  Outbox flushed."
 
@@ -3112,7 +3112,7 @@ echo "  Outbox flushed."
 echo "[9/10] Sending notifications..."
 curl -X POST "${SLACK_WEBHOOK}" \
   -H 'Content-Type: application/json' \
-  -d '{"text":"SENTINEL DR FAILOVER COMPLETE. DR site is now primary. Investigate original failure."}'
+  -d '{"text":"COESCD DR FAILOVER COMPLETE. DR site is now primary. Investigate original failure."}'
 echo "  Notifications sent."
 
 # Step 10: Begin monitoring
@@ -3140,7 +3140,7 @@ echo "=========================================="
 | Week 2 | Full failover drill: execute DR procedure end-to-end | 4 hours | SRE team + incident commander |
 | Week 2 | Measure: RPO achieved, RTO achieved, issues encountered | 1 hour | SRE team |
 | Week 3 | Failback: restore primary site, re-establish replication | 4 hours | SRE team |
-| Week 3 | Drill report: file as post-incident report in Sentinel | 2 hours | SRE lead |
+| Week 3 | Drill report: file as post-incident report in CoESCD | 2 hours | SRE lead |
 
 **Monthly chaos engineering:**
 
@@ -3211,8 +3211,8 @@ scaleDown:
 ```ini
 ; pgbouncer.ini
 [databases]
-sentinel_rw = host=sentinel-postgres-primary port=5432 dbname=sentinel
-sentinel_ro = host=sentinel-postgres-replicas port=5432 dbname=sentinel
+sentinel_rw = host=coescd-postgres-primary port=5432 dbname=sentinel
+sentinel_ro = host=coescd-postgres-replicas port=5432 dbname=sentinel
 
 [pgbouncer]
 listen_addr = 0.0.0.0
@@ -3336,8 +3336,8 @@ jetstream:
 
 # Stream configuration
 streams:
-  sentinel-events:
-    subjects: ["sentinel.>"]
+  coescd-events:
+    subjects: ["coescd.>"]
     retention: limits
     maxAge: 168h          # 7 days
     maxBytes: 107374182400 # 100GB
@@ -3356,7 +3356,7 @@ streams:
 const js = nc.jetstream();
 
 // Durable consumer group -- messages distributed across all worker pods
-const consumer = await js.consumers.get('sentinel-events', 'worker-notifications');
+const consumer = await js.consumers.get('coescd-events', 'worker-notifications');
 const messages = await consumer.consume({
   max_ack_pending: 100,
   ack_wait: 30_000,     // 30s to process before redelivery
@@ -3395,11 +3395,11 @@ persistence:
 lifecycle:
   rules:
     - id: expire-temp-uploads
-      prefix: sentinel-uploads/tmp/
+      prefix: coescd-uploads/tmp/
       expiration:
         days: 7
     - id: transition-old-exports
-      prefix: sentinel-exports/
+      prefix: coescd-exports/
       transition:
         days: 90
         storageClass: COLD   # Tiering to cheaper storage
@@ -3437,7 +3437,7 @@ lifecycle:
 | Large | 25,000 | 20 | 1+3 replicas | 15 | 200 vCPU | 640 GB |
 | National | 100,000+ | 20 (multiple clusters) | Sharded | 15+ per cluster | 500+ vCPU | 1.5+ TB |
 
-For national-scale deployments exceeding 25,000 concurrent users, consider deploying multiple regional Sentinel clusters with cross-region data synchronization via PostgreSQL logical replication and MinIO cross-site replication. Each regional cluster handles its geography independently, with a central analytics cluster aggregating data for national dashboards.
+For national-scale deployments exceeding 25,000 concurrent users, consider deploying multiple regional CoESCD clusters with cross-region data synchronization via PostgreSQL logical replication and MinIO cross-site replication. Each regional cluster handles its geography independently, with a central analytics cluster aggregating data for national dashboards.
 
 ---
 

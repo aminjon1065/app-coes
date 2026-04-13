@@ -2,12 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "sentinel-dashboard",
+      "name": "coescd-dashboard",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--", "-p", "3010"],
       "port": 3010,
       "autoPort": false,
-      "cwd": "/Users/aminjon/Desktop/app-coes/frontend-preview"
+      "cwd": "frontend-preview"
     }
   ]
 }

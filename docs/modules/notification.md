@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-The Notification module is the multi-channel delivery engine of the Sentinel disaster management platform. It consumes domain events from all other modules, evaluates configurable notification rules, and dispatches alerts through multiple delivery channels to ensure operational personnel receive timely, actionable information during incident response.
+The Notification module is the multi-channel delivery engine of the CoESCD disaster management platform. It consumes domain events from all other modules, evaluates configurable notification rules, and dispatches alerts through multiple delivery channels to ensure operational personnel receive timely, actionable information during incident response.
 
 Every operational event -- incident creation, severity escalation, task assignment, SLA breach, document review request, chat mention, break-glass activation -- flows through this module. The notification module is the single point of responsibility for deciding who gets notified, how, and when.
 
@@ -2046,7 +2046,7 @@ WHERE o.id = p.id
 RETURNING o.*;
 ```
 
-Each returned row is published to NATS JetStream on the subject derived from `type` (e.g., `notification.sent.v1` -> NATS subject `sentinel.notification.sent.v1`).
+Each returned row is published to NATS JetStream on the subject derived from `type` (e.g., `notification.sent.v1` -> NATS subject `coescd.notification.sent.v1`).
 
 ---
 

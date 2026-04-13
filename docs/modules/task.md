@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-The Task module is the operational execution layer of the Sentinel disaster management platform. It manages all actionable work items -- whether spawned from an active incident response or created standalone for pre-incident planning, drills, and routine operations.
+The Task module is the operational execution layer of the CoESCD disaster management platform. It manages all actionable work items -- whether spawned from an active incident response or created standalone for pre-incident planning, drills, and routine operations.
 
 Tasks represent discrete units of work that must be assigned, tracked, and completed within defined timelines. The module provides full lifecycle management including assignment tracking, SLA enforcement, subtask decomposition, dependency graphs, and kanban-style board views for situational awareness.
 

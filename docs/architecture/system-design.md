@@ -1,4 +1,4 @@
-# Sentinel -- National Disaster Management Platform: System Design
+# CoESCD -- National Disaster Management Platform: System Design
 
 > **Version:** 1.0.0
 > **Date:** 2026-04-12
@@ -29,11 +29,11 @@
 
 ### 1.1 Mission
 
-Sentinel is the operational nervous system of a national civil protection agency (KChS-class). It serves as the primary coordination platform during emergencies -- earthquakes, floods, CBRN incidents, wildfires, mass casualty events -- and in peacetime for drills, planning, resource management, and post-incident analysis.
+CoESCD is the operational nervous system of a national civil protection agency (KChS-class). It serves as the primary coordination platform during emergencies -- earthquakes, floods, CBRN incidents, wildfires, mass casualty events -- and in peacetime for drills, planning, resource management, and post-incident analysis.
 
 The defining constraint is **time-to-decision under stress**. When a 7.0 earthquake strikes at 03:00, the Incident Commander has seconds, not minutes, to assess scope, allocate resources, and issue orders. Every screen must be glanceable in under 3 seconds. Every action must be reachable in under 2 clicks. Every data feed must be live and trustworthy.
 
-Sentinel replaces fragmented tooling (spreadsheets, radio logs, whiteboards, paper maps) with a unified digital operating picture that spans the full incident lifecycle:
+CoESCD replaces fragmented tooling (spreadsheets, radio logs, whiteboards, paper maps) with a unified digital operating picture that spans the full incident lifecycle:
 
 - **Detection** -- ingest seismic, hydrological, meteorological, and CBRN sensor feeds
 - **Alert** -- notify duty officers, escalate per severity protocol
@@ -530,7 +530,7 @@ Redis 7 serves multiple distinct roles, each using a separate logical database o
 
 **Eviction policy:** `allkeys-lfu` for cache databases; `noeviction` for session and rate-limit databases.
 
-**High availability:** Redis Sentinel with 3 nodes (1 primary, 2 replicas). Automatic failover within 30 seconds.
+**High availability:** Redis CoESCD with 3 nodes (1 primary, 2 replicas). Automatic failover within 30 seconds.
 
 ### 6.4 MinIO Strategy
 
@@ -538,17 +538,17 @@ MinIO provides S3-compatible object storage, deployable on-premise with no publi
 
 **Bucket structure:**
 ```
-sentinel-{tenant_id}-files/        # User-uploaded files
-sentinel-{tenant_id}-documents/    # Generated documents (PDFs, reports)
-sentinel-{tenant_id}-media/        # Voice/video recordings
-sentinel-audit/                    # Cross-tenant audit artifacts (WORM)
-sentinel-backups/                  # Database backup snapshots
-sentinel-temp/                     # Temporary processing (24h lifecycle)
+coescd-{tenant_id}-files/        # User-uploaded files
+coescd-{tenant_id}-documents/    # Generated documents (PDFs, reports)
+coescd-{tenant_id}-media/        # Voice/video recordings
+coescd-audit/                    # Cross-tenant audit artifacts (WORM)
+coescd-backups/                  # Database backup snapshots
+coescd-temp/                     # Temporary processing (24h lifecycle)
 ```
 
 **Content addressing:** Files are stored by `{SHA-256-prefix}/{SHA-256}/{uuid}.{ext}`. Deduplication is achieved by checking SHA-256 before upload; if the hash exists, a new metadata record points to the existing object.
 
-**Object lock (WORM):** The `sentinel-audit` bucket uses S3 Object Lock in COMPLIANCE mode. Once written, audit artifacts cannot be deleted or overwritten until the retention period (7 years) expires. This satisfies regulatory requirements for immutable audit trails.
+**Object lock (WORM):** The `coescd-audit` bucket uses S3 Object Lock in COMPLIANCE mode. Once written, audit artifacts cannot be deleted or overwritten until the retention period (7 years) expires. This satisfies regulatory requirements for immutable audit trails.
 
 **Lifecycle policies:**
 - Incomplete multipart uploads: automatically cleaned after 24 hours
@@ -872,7 +872,7 @@ Resource isolation prevents cascade failures:
 | NATS | Stream replication | Continuous (R3 -- 3 replicas) | Per-stream retention policy |
 
 **DR topology:**
-- **Primary site:** Full deployment with 3-node PostgreSQL (Patroni), 3-node Redis Sentinel, 4-node MinIO, 3-node NATS cluster
+- **Primary site:** Full deployment with 3-node PostgreSQL (Patroni), 3-node Redis CoESCD, 4-node MinIO, 3-node NATS cluster
 - **DR site:** Warm standby with streaming replica (PostgreSQL), Redis replica, MinIO mirror, NATS mirror
 - **Async replication lag:** typically < 1 second, worst case < 60 seconds (RPO guarantee)
 
@@ -1148,7 +1148,7 @@ All API errors follow a consistent format:
       }
     ],
     "traceId": "0af7651916cd43dd8448eb211c80319c",
-    "docs": "https://docs.sentinel.gov/errors/INCIDENT_ALREADY_CLOSED"
+    "docs": "https://docs.coescd.gov/errors/INCIDENT_ALREADY_CLOSED"
   }
 }
 ```
@@ -1183,7 +1183,7 @@ All API errors follow a consistent format:
 
 ### 10.4 Multi-tenancy
 
-Sentinel supports multiple civil protection agencies (or regional branches) in a single deployment. Tenant isolation is enforced at three layers:
+CoESCD supports multiple civil protection agencies (or regional branches) in a single deployment. Tenant isolation is enforced at three layers:
 
 **Layer 1 -- Application:**
 - Every API request is associated with a `tenantId` extracted from the JWT
@@ -1196,7 +1196,7 @@ Sentinel supports multiple civil protection agencies (or regional branches) in a
 - Even if application code omits a `WHERE tenant_id = ...` clause, RLS prevents cross-tenant data access
 
 **Layer 3 -- Object Storage:**
-- MinIO buckets are segmented per tenant: `sentinel-{tenant_id}-files/`
+- MinIO buckets are segmented per tenant: `coescd-{tenant_id}-files/`
 - Bucket policies enforce that IAM credentials can only access their tenant's bucket
 
 **Platform admin operations:**
@@ -1303,8 +1303,8 @@ sentinel/
 │   │   └── dto/                 # Shared DTOs and Zod validation schemas
 │   │
 │   ├── ui/                      # Shared UI component library
-│   │   ├── components/          # shadcn/ui components (customized for Sentinel)
-│   │   ├── primitives/          # Radix UI primitives with Sentinel styling
+│   │   ├── components/          # shadcn/ui components (customized for CoESCD)
+│   │   ├── primitives/          # Radix UI primitives with CoESCD styling
 │   │   └── index.ts             # Barrel exports
 │   │
 │   ├── design-tokens/           # Design system tokens
@@ -1344,7 +1344,7 @@ sentinel/
 │   │   │           ├── sfu/                 # SFU deployment
 │   │   │           ├── web/                 # Next.js deployment
 │   │   │           ├── postgresql/          # StatefulSet (or external operator)
-│   │   │           ├── redis/               # Sentinel deployment
+│   │   │           ├── redis/               # CoESCD deployment
 │   │   │           ├── nats/                # NATS JetStream cluster
 │   │   │           ├── minio/              # MinIO tenant
 │   │   │           ├── opensearch/          # OpenSearch cluster
@@ -1484,7 +1484,7 @@ sentinel/
 **Status:** Accepted
 **Date:** 2025-10-18
 
-**Context:** Sentinel is primarily used in operations centers (24/7 monitoring rooms), emergency response vehicles, and field conditions (nighttime disaster zones). Eye strain and screen glare are operational concerns.
+**Context:** CoESCD is primarily used in operations centers (24/7 monitoring rooms), emergency response vehicles, and field conditions (nighttime disaster zones). Eye strain and screen glare are operational concerns.
 
 **Decision:** Dark theme is the default. Light theme is available as a user preference.
 
@@ -1641,4 +1641,4 @@ CREATE INDEX idx_outbox_unpublished ON outbox (created_at)
 
 ---
 
-*This document is maintained by the Sentinel Architecture Team. Changes require review from at least two senior engineers and approval from the Architecture Review Board.*
+*This document is maintained by the CoESCD Architecture Team. Changes require review from at least two senior engineers and approval from the Architecture Review Board.*

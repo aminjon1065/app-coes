@@ -20,31 +20,31 @@ const incidentCodeColors: Record<string, string> = {
 
 export function TasksToday() {
   return (
-    <div className="flex flex-col bg-sentinel-card border border-sentinel-border rounded-md overflow-hidden">
+    <div className="flex flex-col bg-coescd-card border border-coescd-border rounded-md overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-sentinel-border">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-coescd-border">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold text-sentinel-text">Tasks — Due Today</h2>
-          <span className="text-2xs font-bold px-1.5 py-0.5 rounded-sm bg-sentinel-border text-sentinel-muted">
+          <h2 className="text-sm font-semibold text-coescd-text">Tasks — Due Today</h2>
+          <span className="text-2xs font-bold px-1.5 py-0.5 rounded-sm bg-coescd-border text-coescd-muted">
             {tasks.length}
           </span>
         </div>
         <a
           href="/tasks"
-          className="flex items-center gap-1 text-xs text-sentinel-primary hover:text-sentinel-text transition-colors"
+          className="flex items-center gap-1 text-xs text-coescd-primary hover:text-coescd-text transition-colors"
         >
           View all <ArrowRight className="w-3 h-3" />
         </a>
       </div>
 
       {/* Task list */}
-      <div className="flex-1 divide-y divide-sentinel-border overflow-y-auto">
+      <div className="flex-1 divide-y divide-coescd-border overflow-y-auto">
         {tasks.map((task) => (
           <div
             key={task.id}
             className={cn(
               "flex items-center gap-2.5 px-4 py-2 h-9",
-              "hover:bg-sentinel-border/40 transition-colors group",
+              "hover:bg-coescd-border/40 transition-colors group",
               task.overdue && "bg-severity-bg-4"
             )}
           >
@@ -52,12 +52,12 @@ export function TasksToday() {
             <div
               className={cn(
                 "w-3.5 h-3.5 rounded-sm border shrink-0 flex items-center justify-center",
-                task.overdue ? "border-severity-4/60" : "border-sentinel-border"
+                task.overdue ? "border-severity-4/60" : "border-coescd-border"
               )}
             />
 
             {/* Task name */}
-            <p className="flex-1 text-xs text-sentinel-text truncate group-hover:text-sentinel-text">
+            <p className="flex-1 text-xs text-coescd-text truncate group-hover:text-coescd-text">
               {task.name}
             </p>
 
@@ -65,7 +65,7 @@ export function TasksToday() {
             <span
               className={cn(
                 "font-mono text-2xs px-1.5 py-0.5 rounded-sm border shrink-0",
-                incidentCodeColors[task.incidentCode] || "text-sentinel-muted bg-sentinel-border border-sentinel-border"
+                incidentCodeColors[task.incidentCode] || "text-coescd-muted bg-coescd-border border-coescd-border"
               )}
             >
               {task.incidentCode.split("-")[0]}
@@ -82,7 +82,7 @@ export function TasksToday() {
                 "font-mono text-xs shrink-0 min-w-[52px] text-right",
                 task.overdue && "text-severity-4 font-semibold",
                 !task.overdue && task.nearDue && "text-severity-2",
-                !task.overdue && !task.nearDue && "text-sentinel-muted"
+                !task.overdue && !task.nearDue && "text-coescd-muted"
               )}
             >
               {task.dueTime}

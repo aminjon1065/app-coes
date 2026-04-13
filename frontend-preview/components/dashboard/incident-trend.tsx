@@ -29,13 +29,13 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload?.length) return null;
 
   return (
-    <div className="bg-sentinel-sidebar border border-sentinel-border rounded-md p-3 shadow-xl">
-      <p className="text-xs font-semibold text-sentinel-text mb-2">{label}</p>
+    <div className="bg-coescd-sidebar border border-coescd-border rounded-md p-3 shadow-xl">
+      <p className="text-xs font-semibold text-coescd-text mb-2">{label}</p>
       {payload.map((entry) => (
         <div key={entry.name} className="flex items-center gap-2 mb-1">
           <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-          <span className="text-xs text-sentinel-muted capitalize">{entry.name}:</span>
-          <span className="text-xs font-mono font-medium text-sentinel-text">{entry.value}</span>
+          <span className="text-xs text-coescd-muted capitalize">{entry.name}:</span>
+          <span className="text-xs font-mono font-medium text-coescd-text">{entry.value}</span>
         </div>
       ))}
     </div>
@@ -48,7 +48,7 @@ function CustomLegend() {
       {Object.entries(COLORS).reverse().map(([key, color]) => (
         <div key={key} className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-          <span className="text-xs font-medium text-sentinel-muted capitalize">{key}</span>
+          <span className="text-xs font-medium text-coescd-muted capitalize">{key}</span>
         </div>
       ))}
     </div>
@@ -57,13 +57,13 @@ function CustomLegend() {
 
 export function IncidentTrend() {
   return (
-    <div className="bg-sentinel-card border border-sentinel-border rounded-md overflow-hidden">
+    <div className="bg-coescd-card border border-coescd-border rounded-md overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-sentinel-border">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-coescd-border">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold text-sentinel-text">Incident Trend — 7 Days</h2>
+          <h2 className="text-sm font-semibold text-coescd-text">Incident Trend — 7 Days</h2>
         </div>
-        <span className="text-xs font-mono text-sentinel-subtle">Apr 6 – Apr 12, 2026</span>
+        <span className="text-xs font-mono text-coescd-subtle">Apr 6 – Apr 12, 2026</span>
       </div>
 
       {/* Chart */}

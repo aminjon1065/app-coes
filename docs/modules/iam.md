@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-The IAM module is the central authority for identity, authentication, authorization, and tenant management within the Sentinel disaster management platform.
+The IAM module is the central authority for identity, authentication, authorization, and tenant management within the CoESCD disaster management platform.
 
 ### Ownership Boundaries
 
@@ -643,7 +643,7 @@ Request Body:
 Response 200 (TOTP):
 {
   "factorId": "uuid",
-  "provisioningUri": "otpauth://totp/Sentinel:user@example.com?secret=...&issuer=Sentinel"
+  "provisioningUri": "otpauth://totp/CoESCD:user@example.com?secret=...&issuer=CoESCD"
 }
 
 Response 200 (WebAuthn):
@@ -2573,8 +2573,8 @@ This revokes the oldest sessions to make room for the new one, maintaining a max
     "roles": ["incident_commander", "shift_lead"],
     "iat": 1712918400,
     "exp": 1712919000,
-    "iss": "sentinel-iam",
-    "aud": "sentinel-api"
+    "iss": "coescd-iam",
+    "aud": "coescd-api"
   }
 }
 ```
@@ -2590,8 +2590,8 @@ This revokes the oldest sessions to make room for the new one, maintaining a max
 
 1. Verify JWT signature using the public key matching `kid`.
 2. Verify `exp > now()`.
-3. Verify `iss == "sentinel-iam"`.
-4. Verify `aud == "sentinel-api"`.
+3. Verify `iss == "coescd-iam"`.
+4. Verify `aud == "coescd-api"`.
 5. Extract `tid` and set `app.current_tenant_id` on the database connection for RLS.
 6. Extract `roles` and `clr` for in-process authorization checks.
 

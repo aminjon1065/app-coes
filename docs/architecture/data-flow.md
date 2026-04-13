@@ -1,4 +1,4 @@
-# Sentinel -- National Disaster Management Platform: Data Flow Architecture
+# CoESCD -- National Disaster Management Platform: Data Flow Architecture
 
 > **Version:** 1.0.0
 > **Date:** 2026-04-12
@@ -26,7 +26,7 @@
 
 ## 1. Overview
 
-Data in Sentinel flows through three primary patterns. Every feature in the platform is composed of one or more of these patterns working together.
+Data in CoESCD flows through three primary patterns. Every feature in the platform is composed of one or more of these patterns working together.
 
 ### 1.1 Three Flow Patterns
 
@@ -45,7 +45,7 @@ Eventual consistency is not a bug. It is a deliberate design choice documented p
 ### 1.3 Unified Data Flow Diagram
 
 ```
-                              SENTINEL DATA FLOW -- ALL THREE PATTERNS
+                              COESCD DATA FLOW -- ALL THREE PATTERNS
   ========================================================================================
 
   PATTERN 1: REQUEST-RESPONSE (synchronous)
@@ -510,7 +510,7 @@ After the database transaction commits in the request-response flow, the asynchr
 │                                                                            │
 │  2. For each row:                                                          │
 │     a. Build DomainEvent envelope (id, type, occurredAt, tenantId, ...)    │
-│     b. Publish to NATS subject: sentinel.incident.created.v1               │
+│     b. Publish to NATS subject: coescd.incident.created.v1               │
 │     c. NATS returns ACK (JetStream publish confirmation)                   │
 │                                                                            │
 │  3. UPDATE incident.outbox                                                 │
@@ -559,7 +559,7 @@ export class OutboxRelayService {
 
       for (const entry of entries) {
         const event = this.buildEnvelope(entry);
-        const subject = `sentinel.${entry.event_type}`;
+        const subject = `coescd.${entry.event_type}`;
 
         try {
           const ack = await this.natsClient.publish(subject, event);
@@ -609,12 +609,12 @@ export class OutboxRelayService {
 
 ### 3.2 NATS JetStream Routing
 
-The event `sentinel.incident.created.v1` lands in JetStream:
+The event `coescd.incident.created.v1` lands in JetStream:
 
 ```
 NATS JetStream Configuration:
   Stream: STREAM_INCIDENT
-    subjects: ["sentinel.incident.>"]
+    subjects: ["coescd.incident.>"]
     retention: WorkQueue (each message delivered to one consumer per group)
     storage: File
     max_age: 7 days
@@ -629,11 +629,11 @@ Six durable consumers are bound to `STREAM_INCIDENT`:
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                                                                          │
-│  sentinel.incident.created.v1                                            │
+│  coescd.incident.created.v1                                            │
 │  ═══════════════════════════                                             │
 │       │                                                                  │
 │       ├──► Consumer: notification-incident                               │
-│       │    filter: sentinel.incident.>                                   │
+│       │    filter: coescd.incident.>                                   │
 │       │    deliver: push                                                 │
 │       │    ack_wait: 30s                                                 │
 │       │    max_deliver: 5                                                │
@@ -651,7 +651,7 @@ Six durable consumers are bound to `STREAM_INCIDENT`:
 │       │    └──────────────────────────────────────────┘                  │
 │       │                                                                  │
 │       ├──► Consumer: analytics-etl                                       │
-│       │    filter: sentinel.incident.>                                   │
+│       │    filter: coescd.incident.>                                   │
 │       │    ┌──────────────────────────────────────────┐                  │
 │       │    │ 1. INSERT INTO analytics.fact_incident    │                  │
 │       │    │    (id, tenant_id, category, severity,    │                  │
@@ -662,7 +662,7 @@ Six durable consumers are bound to `STREAM_INCIDENT`:
 │       │    └──────────────────────────────────────────┘                  │
 │       │                                                                  │
 │       ├──► Consumer: audit-writer                                        │
-│       │    filter: sentinel.incident.>                                   │
+│       │    filter: coescd.incident.>                                   │
 │       │    ┌──────────────────────────────────────────┐                  │
 │       │    │ 1. Compute HMAC-SHA256 chain:             │                  │
 │       │    │    hash = HMAC(prev_hash + event_json)    │                  │
@@ -673,7 +673,7 @@ Six durable consumers are bound to `STREAM_INCIDENT`:
 │       │    └──────────────────────────────────────────┘                  │
 │       │                                                                  │
 │       ├──► Consumer: realtime-fanout                                     │
-│       │    filter: sentinel.incident.>                                   │
+│       │    filter: coescd.incident.>                                   │
 │       │    ┌──────────────────────────────────────────┐                  │
 │       │    │ 1. Push to Socket.IO room                 │                  │
 │       │    │    "tenant:{tenantId}" (all operators)     │                  │
@@ -685,18 +685,18 @@ Six durable consumers are bound to `STREAM_INCIDENT`:
 │       │    └──────────────────────────────────────────┘                  │
 │       │                                                                  │
 │       ├──► Consumer: search-indexer                                       │
-│       │    filter: sentinel.incident.>                                   │
+│       │    filter: coescd.incident.>                                   │
 │       │    ┌──────────────────────────────────────────┐                  │
 │       │    │ 1. Build OpenSearch document:              │                  │
 │       │    │    { code, title, description, category,   │                  │
 │       │    │      severity, status, commander,          │                  │
 │       │    │      tenant_id, created_at, location }     │                  │
-│       │    │ 2. Upsert to sentinel-incidents index     │                  │
+│       │    │ 2. Upsert to coescd-incidents index     │                  │
 │       │    │    (_id = incident.id)                     │                  │
 │       │    └──────────────────────────────────────────┘                  │
 │       │                                                                  │
 │       └──► Consumer: chat-room-creator                                   │
-│            filter: sentinel.incident.created.v1                          │
+│            filter: coescd.incident.created.v1                          │
 │            ┌──────────────────────────────────────────┐                  │
 │            │ 1. INSERT INTO chat.channels               │                  │
 │            │    (kind=INCIDENT_ROOM, incident_id,       │                  │
@@ -851,7 +851,7 @@ The **Redis adapter** (`@socket.io/redis-adapter`) ensures that when Gateway-1 r
 ```
 Client                          Gateway                         Redis / NATS
   │                                │                                │
-  │  1. wss://rt.sentinel.gov/     │                                │
+  │  1. wss://rt.coescd.gov/     │                                │
   │     ?token=<JWT>               │                                │
   │ ──────────────────────────►    │                                │
   │                                │  2. Validate JWT               │
@@ -1362,18 +1362,18 @@ Domain Events (NATS JetStream)
 
 | Index | Source Events | Key Fields | Primary Use |
 |---|---|---|---|
-| `sentinel-incidents` | `incident.created.v1`, `incident.updated.v1`, `incident.severity_changed.v1`, `incident.closed.v1` | `code`, `title`, `description`, `category`, `severity`, `status`, `commander_name`, `tenant_id`, `location` (geo_point), `created_at`, `closed_at` | Incident search, Cmd-K universal search, map search |
-| `sentinel-tasks` | `task.created.v1`, `task.updated.v1`, `task.completed.v1`, `task.sla_breached.v1` | `title`, `description`, `assignee_name`, `incident_code`, `status`, `priority`, `sla_breach_at`, `tenant_id` | Task search, assignment lookup |
-| `sentinel-documents` | `document.created.v1`, `document.published.v1`, `document.approved.v1` | `title`, `template_code`, `state`, `owner_name`, `incident_code`, `tenant_id`, `published_at` | Document search, approval tracking |
-| `sentinel-messages` | `chat.message.posted.v1` | `body`, `author_name`, `channel_name`, `channel_kind`, `incident_code`, `tenant_id`, `posted_at` | Message search within channels and globally |
-| `sentinel-users` | `iam.user.created.v1`, `iam.user.updated.v1`, `iam.user.deactivated.v1` | `full_name`, `email`, `roles`, `department`, `tenant_id`, `status` | People search, mention autocomplete |
-| `sentinel-audit` | All audit events | `action`, `resource_type`, `resource_id`, `actor_name`, `actor_ip`, `tenant_id`, `reason`, `occurred_at` | Audit log search, compliance investigations |
+| `coescd-incidents` | `incident.created.v1`, `incident.updated.v1`, `incident.severity_changed.v1`, `incident.closed.v1` | `code`, `title`, `description`, `category`, `severity`, `status`, `commander_name`, `tenant_id`, `location` (geo_point), `created_at`, `closed_at` | Incident search, Cmd-K universal search, map search |
+| `coescd-tasks` | `task.created.v1`, `task.updated.v1`, `task.completed.v1`, `task.sla_breached.v1` | `title`, `description`, `assignee_name`, `incident_code`, `status`, `priority`, `sla_breach_at`, `tenant_id` | Task search, assignment lookup |
+| `coescd-documents` | `document.created.v1`, `document.published.v1`, `document.approved.v1` | `title`, `template_code`, `state`, `owner_name`, `incident_code`, `tenant_id`, `published_at` | Document search, approval tracking |
+| `coescd-messages` | `chat.message.posted.v1` | `body`, `author_name`, `channel_name`, `channel_kind`, `incident_code`, `tenant_id`, `posted_at` | Message search within channels and globally |
+| `coescd-users` | `iam.user.created.v1`, `iam.user.updated.v1`, `iam.user.deactivated.v1` | `full_name`, `email`, `roles`, `department`, `tenant_id`, `status` | People search, mention autocomplete |
+| `coescd-audit` | All audit events | `action`, `resource_type`, `resource_id`, `actor_name`, `actor_ip`, `tenant_id`, `reason`, `occurred_at` | Audit log search, compliance investigations |
 
 ### 7.3 Index Mapping Example
 
 ```json
 {
-  "sentinel-incidents": {
+  "coescd-incidents": {
     "mappings": {
       "dynamic": "strict",
       "properties": {
@@ -1427,7 +1427,7 @@ export class SearchIndexerService {
     this.flushTimer = setInterval(() => this.flush(), 1000);
   }
 
-  @NatsConsumer('search-indexer', 'sentinel.>')
+  @NatsConsumer('search-indexer', 'coescd.>')
   @IdempotentConsumer()
   async handleEvent(event: DomainEvent): Promise<void> {
     const mapping = EVENT_TO_INDEX_MAP[event.type];
@@ -1517,7 +1517,7 @@ When OpenSearch is unavailable:
 ```json
 {
   "policy": {
-    "description": "Sentinel index lifecycle",
+    "description": "CoESCD index lifecycle",
     "default_state": "hot",
     "states": [
       {
@@ -1548,7 +1548,7 @@ When OpenSearch is unavailable:
 }
 ```
 
-Exception: `sentinel-audit` index uses a different policy with 7-year retention (regulatory requirement).
+Exception: `coescd-audit` index uses a different policy with 7-year retention (regulatory requirement).
 
 ### 7.7 Reindex Capability
 
@@ -1557,16 +1557,16 @@ Admin endpoint for full reindex when mapping changes or data corruption occurs:
 ```
 POST /admin/search/reindex
 {
-  "index": "sentinel-incidents",
+  "index": "coescd-incidents",
   "source": "database"   // reads from PostgreSQL, not NATS replay
 }
 ```
 
 This triggers a background job that:
-1. Creates a new index (`sentinel-incidents-v2`) with updated mappings.
+1. Creates a new index (`coescd-incidents-v2`) with updated mappings.
 2. Streams all rows from `incident.incidents` via cursor-based pagination.
 3. Bulk indexes into the new index.
-4. Swaps the alias `sentinel-incidents` from the old index to the new one.
+4. Swaps the alias `coescd-incidents` from the old index to the new one.
 5. Deletes the old index after 24h.
 
 ---
@@ -1859,7 +1859,7 @@ These scenarios trace data through the full system to illustrate how the pattern
       → All operator dashboards update immediately
 
    g. Search (search-indexer consumer):
-      UPSERT sentinel-incidents { code, title, severity=CRITICAL, category=EARTHQUAKE, ... }
+      UPSERT coescd-incidents { code, title, severity=CRITICAL, category=EARTHQUAKE, ... }
 
 ════════════════════════════════════════════════════════════════════════════
  PHASE 2: COMMAND ASSIGNMENT
@@ -2165,7 +2165,7 @@ These scenarios trace data through the full system to illustrate how the pattern
        INSERT incident.timeline (kind=DOCUMENT_PUBLISHED,
          data={documentId, title, type})
 
-    e. Search → UPSERT sentinel-documents { state: "PUBLISHED", published_at }
+    e. Search → UPSERT coescd-documents { state: "PUBLISHED", published_at }
 
     f. Audit → write
 ```

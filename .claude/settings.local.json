@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs sed:*)",
+      "Bash(sed -i -e 's/MINIO_ROOT_USER: sentinel$/MINIO_ROOT_USER: coescd/' -e 's/mc alias set sentinel http:\\\\/\\\\/minio:9000 sentinel coescd_dev/mc alias set coescd http:\\\\/\\\\/minio:9000 coescd coescd_dev/' -e 's/sentinel\\\\/coescd-/coescd\\\\/coescd-/g' -e 's/User: sentinel \\\\//User: coescd \\\\//g' infra/docker/docker-compose.yml)",
+      "Bash(sed -i -e 's/S3_ACCESS_KEY=sentinel$/S3_ACCESS_KEY=coescd/' -e 's/JWT_ISSUER=sentinel$/JWT_ISSUER=coescd/' -e 's|realms/sentinel|realms/coescd|' .env.example)",
+      "Bash(npx tsc:*)",
+      "Bash(./node_modules/.bin/tsc -p tsconfig.build.json --noEmit)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(npm install:*)",
+      "Bash(docker compose:*)",
+      "Bash(docker volume:*)",
+      "Bash(docker rm:*)",
+      "Bash(npm run:*)",
+      "Bash(curl -s http://localhost:3001/health)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(p.dependencies['pino-pretty']\\)\")"
+    ]
+  }
+}

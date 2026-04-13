@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-The Communication module provides real-time messaging, voice calls, and video conferencing for incident coordination within the Sentinel disaster management platform. It is the primary collaboration backbone: every incident gets a dedicated chat room, responders exchange field updates, and incident commanders run voice briefings -- all within a single, persistent communication layer.
+The Communication module provides real-time messaging, voice calls, and video conferencing for incident coordination within the CoESCD disaster management platform. It is the primary collaboration backbone: every incident gets a dedicated chat room, responders exchange field updates, and incident commanders run voice briefings -- all within a single, persistent communication layer.
 
 ### Ownership Boundaries
 

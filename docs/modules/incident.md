@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-The Incident module is the central operational object of the entire Sentinel disaster management platform. Every other operational module -- tasks, documents, chat, GIS overlays, notifications, analytics -- revolves around incidents.
+The Incident module is the central operational object of the entire CoESCD disaster management platform. Every other operational module -- tasks, documents, chat, GIS overlays, notifications, analytics -- revolves around incidents.
 
 An incident represents any event that requires coordinated response: earthquake, flood, fire, wildfire, industrial accident, CBRN event, mass gathering, medical emergency, transport incident, or drill.
 

@@ -10,16 +10,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Sentinel design tokens
-        "sentinel-bg": "#0f1117",
-        "sentinel-card": "#141820",
-        "sentinel-sidebar": "#181e28",
-        "sentinel-border": "#252d3d",
-        "sentinel-text": "#f0f1f5",
-        "sentinel-muted": "#9ba3b5",
-        "sentinel-subtle": "#6b7589",
-        "sentinel-primary": "#5b8def",
-        "sentinel-primary-dim": "#3a6bc7",
+        // CoESCD design tokens
+        "coescd-bg": "#0f1117",
+        "coescd-card": "#141820",
+        "coescd-sidebar": "#181e28",
+        "coescd-border": "#252d3d",
+        "coescd-text": "#f0f1f5",
+        "coescd-muted": "#9ba3b5",
+        "coescd-subtle": "#6b7589",
+        "coescd-primary": "#5b8def",
+        "coescd-primary-dim": "#3a6bc7",
         // Severity colors
         "severity-1": "#4ead7a",
         "severity-2": "#e6a020",

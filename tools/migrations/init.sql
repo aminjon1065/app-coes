@@ -1,4 +1,4 @@
--- Sentinel — Database Initialization
+-- CoESCD — Database Initialization
 -- Runs once on first container start (docker-entrypoint-initdb.d).
 -- Creates extensions, schemas, and the uuidv7() polyfill.
 -- Per-schema DDL lives in tools/migrations/{schema}/*.sql
@@ -6,13 +6,23 @@
 -- Extensions (system-design.md §6.1)
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "citext";       -- case-insensitive text (iam.users.email)
 CREATE EXTENSION IF NOT EXISTS "postgis";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 CREATE EXTENSION IF NOT EXISTS "btree_gist";
 CREATE EXTENSION IF NOT EXISTS "pg_stat_statements";
 
--- pg_partman for automated monthly partition management
-CREATE EXTENSION IF NOT EXISTS "pg_partman" SCHEMA partman;
+-- pg_partman for automated monthly partition management.
+-- NOT available in the base postgis/postgis image — install it in production
+-- via a custom image (apt-get install postgresql-17-partman).
+-- Wrapped in a DO block so dev startup doesn't fail when it's missing.
+DO $$
+BEGIN
+  CREATE EXTENSION IF NOT EXISTS pg_partman SCHEMA partman;
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'pg_partman not available (dev mode) — skipping. Install postgresql-17-partman for production.';
+END;
+$$;
 
 -- Domain schemas (one per bounded context)
 CREATE SCHEMA IF NOT EXISTS iam;

@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-The Audit module provides a tamper-evident, append-only audit trail for every significant action performed across the Sentinel disaster management platform.
+The Audit module provides a tamper-evident, append-only audit trail for every significant action performed across the CoESCD disaster management platform.
 
 ### Ownership Boundaries
 
@@ -260,9 +260,9 @@ AuditEvent has no state transitions. It is created once and never modified. Audi
 #### SearchAuditEvents
 
 - **Input**: `{ q: string, tenantId?, from?, to? }`
-- **Flow**: Validate actor has `audit.read` permission -> forward query to OpenSearch index (`sentinel-audit-*`) -> OpenSearch returns matching event IDs -> fetch full events from PostgreSQL -> emit `audit.read` event -> return results.
+- **Flow**: Validate actor has `audit.read` permission -> forward query to OpenSearch index (`coescd-audit-*`) -> OpenSearch returns matching event IDs -> fetch full events from PostgreSQL -> emit `audit.read` event -> return results.
 - **OpenSearch integration**: Audit events are indexed to OpenSearch asynchronously via a dedicated NATS consumer. The index includes: `action`, `resource_type`, `reason`, `actor_type`, and `metadata.sourceEventType`. Full-text search is available on `reason` and `action`.
-- **Index pattern**: Monthly indices matching `sentinel-audit-YYYY-MM`, with ILM policy mirroring PostgreSQL retention tiers.
+- **Index pattern**: Monthly indices matching `coescd-audit-YYYY-MM`, with ILM policy mirroring PostgreSQL retention tiers.
 
 #### GetAuditStats
 

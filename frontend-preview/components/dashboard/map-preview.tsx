@@ -18,11 +18,11 @@ const severityLabels: Record<number, string> = {
 
 export function MapPreview() {
   return (
-    <div className="flex flex-col bg-sentinel-card border border-sentinel-border rounded-md overflow-hidden">
+    <div className="flex flex-col bg-coescd-card border border-coescd-border rounded-md overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-sentinel-border">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-coescd-border">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold text-sentinel-text">Live Map</h2>
+          <h2 className="text-sm font-semibold text-coescd-text">Live Map</h2>
           {/* LIVE badge */}
           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-severity-1/15 border border-severity-1/30">
             <span className="relative flex h-1.5 w-1.5">
@@ -34,7 +34,7 @@ export function MapPreview() {
         </div>
         <a
           href="/map"
-          className="flex items-center gap-1 text-xs text-sentinel-primary hover:text-sentinel-text transition-colors"
+          className="flex items-center gap-1 text-xs text-coescd-primary hover:text-coescd-text transition-colors"
         >
           <Maximize2 className="w-3 h-3" />
           Full map
@@ -98,8 +98,8 @@ export function MapPreview() {
         ))}
 
         {/* Legend */}
-        <div className="absolute bottom-3 left-3 bg-sentinel-card/90 border border-sentinel-border rounded-md p-2.5 backdrop-blur-sm">
-          <p className="text-2xs font-semibold text-sentinel-subtle uppercase tracking-widest mb-1.5">Severity</p>
+        <div className="absolute bottom-3 left-3 bg-coescd-card/90 border border-coescd-border rounded-md p-2.5 backdrop-blur-sm">
+          <p className="text-2xs font-semibold text-coescd-subtle uppercase tracking-widest mb-1.5">Severity</p>
           <div className="flex flex-col gap-1">
             {([4, 3, 2, 1] as const).map((level) => (
               <div key={level} className="flex items-center gap-1.5">
@@ -107,21 +107,21 @@ export function MapPreview() {
                   className="w-2 h-2 rounded-full"
                   style={{ backgroundColor: severityDotColors[level] }}
                 />
-                <span className="text-2xs text-sentinel-muted">{severityLabels[level]}</span>
+                <span className="text-2xs text-coescd-muted">{severityLabels[level]}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Coordinates overlay */}
-        <div className="absolute top-3 left-3 font-mono text-2xs text-sentinel-subtle/50">
+        <div className="absolute top-3 left-3 font-mono text-2xs text-coescd-subtle/50">
           43.2°N 76.8°E
         </div>
 
         {/* Scale */}
         <div className="absolute bottom-3 right-3 flex items-center gap-1">
-          <div className="w-12 h-px bg-sentinel-muted/40" />
-          <span className="font-mono text-2xs text-sentinel-subtle/60">200 km</span>
+          <div className="w-12 h-px bg-coescd-muted/40" />
+          <span className="font-mono text-2xs text-coescd-subtle/60">200 km</span>
         </div>
       </div>
     </div>
@@ -175,12 +175,12 @@ function IncidentMarker({ incident }: { incident: IncidentItem }) {
       {/* Tooltip */}
       <div className={cn(
         "absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48",
-        "bg-sentinel-sidebar border border-sentinel-border rounded-md p-2 shadow-xl",
+        "bg-coescd-sidebar border border-coescd-border rounded-md p-2 shadow-xl",
         "opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10"
       )}>
-        <p className="font-mono text-xs text-sentinel-primary mb-1">{inc.code}</p>
-        <p className="text-xs text-sentinel-text leading-tight">{inc.title}</p>
-        <p className="text-2xs text-sentinel-muted mt-1">{inc.location}</p>
+        <p className="font-mono text-xs text-coescd-primary mb-1">{inc.code}</p>
+        <p className="text-xs text-coescd-text leading-tight">{inc.title}</p>
+        <p className="text-2xs text-coescd-muted mt-1">{inc.location}</p>
       </div>
     </div>
   );

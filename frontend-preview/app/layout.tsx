@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Sentinel — National Disaster Management Platform",
+  title: "CoESCD — National Disaster Management Platform",
   description: "Command-center for emergency response operators",
 };
 
@@ -21,7 +21,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="bg-sentinel-bg text-sentinel-text antialiased">
+      <body className="bg-coescd-bg text-coescd-text antialiased">
         {children}
       </body>
     </html>

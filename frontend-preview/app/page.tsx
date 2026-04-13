@@ -18,18 +18,18 @@ export default function DashboardPage() {
         {/* Page header */}
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-base font-semibold text-sentinel-text">
+            <h1 className="text-base font-semibold text-coescd-text">
               Good morning, Rustam.{" "}
               <span className="text-severity-4 font-bold">3 incidents need your attention.</span>
             </h1>
-            <p className="text-xs text-sentinel-muted mt-0.5 font-mono">{now}</p>
+            <p className="text-xs text-coescd-muted mt-0.5 font-mono">{now}</p>
           </div>
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-1.5 h-8 px-3 text-xs rounded-md border border-sentinel-border text-sentinel-muted hover:bg-sentinel-border hover:text-sentinel-text transition-colors">
+            <button className="flex items-center gap-1.5 h-8 px-3 text-xs rounded-md border border-coescd-border text-coescd-muted hover:bg-coescd-border hover:text-coescd-text transition-colors">
               <RefreshCw className="w-3.5 h-3.5" />
               Refresh
             </button>
-            <button className="flex items-center gap-1.5 h-8 px-3 text-xs rounded-md border border-sentinel-border text-sentinel-muted hover:bg-sentinel-border hover:text-sentinel-text transition-colors">
+            <button className="flex items-center gap-1.5 h-8 px-3 text-xs rounded-md border border-coescd-border text-coescd-muted hover:bg-coescd-border hover:text-coescd-text transition-colors">
               <SlidersHorizontal className="w-3.5 h-3.5" />
               Filter
             </button>

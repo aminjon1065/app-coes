@@ -1,4 +1,4 @@
-# Prometheus scrape configuration for local Sentinel development.
+# Prometheus scrape configuration for local CoESCD development.
 # All app services expose prom-client metrics at /metrics.
 # host.docker.internal resolves to the Docker host machine (Mac + Linux via extra_hosts).
 
@@ -10,22 +10,22 @@ global:
 
 scrape_configs:
   # ── Application services (run via pnpm run dev on the host) ─────────────────
-  - job_name: sentinel-api
+  - job_name: coescd-api
     static_configs:
       - targets: ["host.docker.internal:3001"]
     metrics_path: /metrics
 
-  - job_name: sentinel-realtime
+  - job_name: coescd-realtime
     static_configs:
       - targets: ["host.docker.internal:3002"]
     metrics_path: /metrics
 
-  - job_name: sentinel-workers
+  - job_name: coescd-workers
     static_configs:
       - targets: ["host.docker.internal:3004"]
     metrics_path: /metrics
 
-  - job_name: sentinel-sfu
+  - job_name: coescd-sfu
     static_configs:
       - targets: ["host.docker.internal:3003"]
     metrics_path: /metrics

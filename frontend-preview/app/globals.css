@@ -27,15 +27,15 @@
   --input: #252d3d;
   --ring: #5b8def;
 
-  /* Sentinel-specific */
-  --sentinel-bg: #0f1117;
-  --sentinel-card: #141820;
-  --sentinel-sidebar: #181e28;
-  --sentinel-border: #252d3d;
-  --sentinel-text: #f0f1f5;
-  --sentinel-muted: #9ba3b5;
-  --sentinel-subtle: #6b7589;
-  --sentinel-primary: #5b8def;
+  /* CoESCD-specific */
+  --coescd-bg: #0f1117;
+  --coescd-card: #141820;
+  --coescd-sidebar: #181e28;
+  --coescd-border: #252d3d;
+  --coescd-text: #f0f1f5;
+  --coescd-muted: #9ba3b5;
+  --coescd-subtle: #6b7589;
+  --coescd-primary: #5b8def;
 
   /* Severity colors */
   --severity-1: #4ead7a;
@@ -96,16 +96,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--sentinel-bg);
+  background: var(--coescd-bg);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--sentinel-border);
+  background: var(--coescd-border);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--sentinel-subtle);
+  background: var(--coescd-subtle);
 }
 
 /* ─── Utility classes ────────────────────────────────────────── */
@@ -113,29 +113,29 @@ body {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
 }
 
-.text-sentinel-primary { color: var(--sentinel-primary); }
-.text-sentinel-muted { color: var(--sentinel-muted); }
-.text-sentinel-subtle { color: var(--sentinel-subtle); }
-.bg-sentinel-card { background-color: var(--sentinel-card); }
-.bg-sentinel-sidebar { background-color: var(--sentinel-sidebar); }
-.border-sentinel { border-color: var(--sentinel-border); }
+.text-coescd-primary { color: var(--coescd-primary); }
+.text-coescd-muted { color: var(--coescd-muted); }
+.text-coescd-subtle { color: var(--coescd-subtle); }
+.bg-coescd-card { background-color: var(--coescd-card); }
+.bg-coescd-sidebar { background-color: var(--coescd-sidebar); }
+.border-coescd { border-color: var(--coescd-border); }
 
 /* ─── Pulsing animations ─────────────────────────────────────── */
-@keyframes sentinel-pulse {
+@keyframes coescd-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
 }
 
-@keyframes sentinel-ping {
+@keyframes coescd-ping {
   75%, 100% { transform: scale(2); opacity: 0; }
 }
 
-.animate-sentinel-pulse {
-  animation: sentinel-pulse 2s ease-in-out infinite;
+.animate-coescd-pulse {
+  animation: coescd-pulse 2s ease-in-out infinite;
 }
 
-.animate-sentinel-ping {
-  animation: sentinel-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+.animate-coescd-ping {
+  animation: coescd-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
 /* ─── Critical row pulse border ──────────────────────────────── */
