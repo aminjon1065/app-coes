@@ -6,7 +6,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { DataSource, Repository } from 'typeorm';
+import { Brackets, DataSource, Repository } from 'typeorm';
 import { RequestUser } from '../../../shared/auth/current-user.decorator';
 import { DatabaseContextService } from '../../../shared/database/database-context.service';
 import { User } from '../../iam/entities/user.entity';
@@ -122,10 +122,21 @@ export class IncidentsService {
   }
 
   async findAll(actor: RequestUser, query: ListIncidentsDto): Promise<Incident[]> {
-    const qb = this.baseVisibleQuery(actor)
-      .orderBy('incident.createdAt', 'DESC')
-      .take(query.limit ?? 25);
+    const qb = this.baseVisibleQuery(actor).take(query.limit ?? 25);
 
+    if (query.q?.trim()) {
+      const term = `%${query.q.trim()}%`;
+      qb.andWhere(
+        new Brackets((searchQb) => {
+          searchQb
+            .where('incident.code ILIKE :term', { term })
+            .orWhere('incident.title ILIKE :term', { term })
+            .orWhere('COALESCE(incident.description, \'\') ILIKE :term', {
+              term,
+            });
+        }),
+      );
+    }
     if (query.status) {
       qb.andWhere('incident.status = :status', { status: query.status });
     }
@@ -134,6 +145,25 @@ export class IncidentsService {
     }
     if (query.severity) {
       qb.andWhere('incident.severity = :severity', { severity: query.severity });
+    }
+
+    switch (query.sort ?? 'newest') {
+      case 'updated':
+        qb.orderBy('incident.updatedAt', 'DESC').addOrderBy('incident.createdAt', 'DESC');
+        break;
+      case 'severity_desc':
+        qb.orderBy('incident.severity', 'DESC').addOrderBy('incident.updatedAt', 'DESC');
+        break;
+      case 'severity_asc':
+        qb.orderBy('incident.severity', 'ASC').addOrderBy('incident.updatedAt', 'DESC');
+        break;
+      case 'code_asc':
+        qb.orderBy('incident.code', 'ASC').addOrderBy('incident.updatedAt', 'DESC');
+        break;
+      case 'newest':
+      default:
+        qb.orderBy('incident.createdAt', 'DESC').addOrderBy('incident.updatedAt', 'DESC');
+        break;
     }
 
     return qb.getMany();

@@ -1,5 +1,6 @@
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { DataSource } from 'typeorm';
+import { Brackets } from 'typeorm';
 import type { RequestUser } from '../../../shared/auth/current-user.decorator';
 import { DatabaseContextService } from '../../../shared/database/database-context.service';
 import { User } from '../../iam/entities/user.entity';
@@ -158,6 +159,41 @@ describe('IncidentsService', () => {
         payload: { after: 'draft' },
       }),
     );
+  });
+
+  it('applies search filter when listing incidents', async () => {
+    const qb = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([]),
+    };
+    incidentsRepository.createQueryBuilder.mockReturnValue(qb);
+
+    await service.findAll(actor, { q: 'flood' });
+
+    expect(qb.andWhere).toHaveBeenCalledWith(expect.any(Brackets));
+  });
+
+  it('applies requested sort preset when listing incidents', async () => {
+    const qb = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([]),
+    };
+    incidentsRepository.createQueryBuilder.mockReturnValue(qb);
+
+    await service.findAll(actor, { sort: 'severity_desc' });
+
+    expect(qb.orderBy).toHaveBeenCalledWith('incident.severity', 'DESC');
+    expect(qb.addOrderBy).toHaveBeenCalledWith('incident.updatedAt', 'DESC');
   });
 
   it('transitions incident and records status timeline entry', async () => {

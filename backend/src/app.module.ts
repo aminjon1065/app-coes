@@ -9,6 +9,7 @@ import { NatsModule } from './shared/events/nats.module';
 import { HealthModule } from './shared/health/health.module';
 import { IamModule } from './modules/iam/iam.module';
 import { IncidentModule } from './modules/incident/incident.module';
+import { TaskModule } from './modules/task/task.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { IncidentModule } from './modules/incident/incident.module';
     // ── Domain modules ────────────────────────────────────────────────────────
     IamModule,
     IncidentModule,
+    TaskModule,
   ],
 })
 export class AppModule {}

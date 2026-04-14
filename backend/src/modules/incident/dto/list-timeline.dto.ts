@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, Matches } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsInt, IsOptional, IsString, Matches, Max, Min } from 'class-validator';
 
 export class ListTimelineDto {
   @ApiPropertyOptional({
@@ -12,5 +13,9 @@ export class ListTimelineDto {
 
   @ApiPropertyOptional({ minimum: 1, maximum: 100, default: 50 })
   @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
   limit?: number;
 }
