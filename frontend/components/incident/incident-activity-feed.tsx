@@ -13,9 +13,9 @@ import {
   describeRealtimeEvent,
   type FrontendRealtimeEvent,
 } from "@/lib/realtime";
+import { cn } from "@/lib/utils";
 import {
   formatTaskRelative,
-  formatTaskTimestamp,
   type UserSummary,
 } from "@/lib/api/task-workspace";
 import {
@@ -26,7 +26,8 @@ import {
   type IncidentSitrepDto,
   type IncidentTimelineDto,
 } from "@/lib/api/incident-workspace";
-import { cn } from "@/lib/utils";
+import { IncidentTimeline } from "@/components/incident/incident-timeline";
+import { SitrepCard } from "@/components/incident/sitrep-card";
 
 type IncidentActivityFeedProps = {
   source: "api" | "mock";
@@ -51,135 +52,6 @@ type IncidentActivityResponse = {
   } | null;
   fetchedAt: string;
 };
-
-function findUserName(users: UserSummary[], userId: string | null | undefined) {
-  if (!userId) {
-    return "Unknown user";
-  }
-
-  return users.find((user) => user.id === userId)?.fullName ?? userId;
-}
-
-function payloadString(payload: Record<string, unknown>, key: string) {
-  const value = payload[key];
-  return typeof value === "string" ? value : null;
-}
-
-function payloadNumber(payload: Record<string, unknown>, key: string) {
-  const value = payload[key];
-  return typeof value === "number" ? value : null;
-}
-
-function eventTone(kind: string) {
-  if (kind === "sitrep") {
-    return "border-cyan-400/25 bg-cyan-400/8";
-  }
-  if (kind === "severity_change" || kind === "escalation") {
-    return "border-rose-400/25 bg-rose-400/8";
-  }
-  if (kind === "status_change") {
-    return "border-amber-300/25 bg-amber-300/8";
-  }
-  return "border-white/10 bg-black/10";
-}
-
-function describeTimelineEntry(
-  entry: IncidentTimelineDto,
-  sitreps: IncidentSitrepDto[],
-  users: UserSummary[],
-) {
-  const actorName = findUserName(users, entry.actorId);
-
-  switch (entry.kind) {
-    case "status_change": {
-      const before = payloadString(entry.payload, "before");
-      const after = payloadString(entry.payload, "after");
-      const resolutionSummary = payloadString(
-        entry.payload,
-        "resolutionSummary",
-      );
-      const reason = payloadString(entry.payload, "reason");
-
-      return {
-        title:
-          before && after
-            ? `Status moved from ${before} to ${after}`
-            : "Status updated",
-        accent: "Status",
-        body: resolutionSummary ?? reason ?? "No additional summary provided.",
-        meta: `by ${actorName}`,
-      };
-    }
-    case "severity_change": {
-      const before = payloadNumber(entry.payload, "before");
-      const after = payloadNumber(entry.payload, "after");
-      const reason = payloadString(entry.payload, "reason");
-
-      return {
-        title:
-          before !== null && after !== null
-            ? `Severity changed from ${before} to ${after}`
-            : "Severity updated",
-        accent: "Severity",
-        body: reason ?? "No severity rationale provided.",
-        meta: `by ${actorName}`,
-      };
-    }
-    case "commander_assigned": {
-      const previousCommanderId = payloadString(
-        entry.payload,
-        "previousCommanderId",
-      );
-      const newCommanderId = payloadString(entry.payload, "newCommanderId");
-
-      return {
-        title: `Commander set to ${findUserName(users, newCommanderId)}`,
-        accent: "Command",
-        body: previousCommanderId
-          ? `Previous commander: ${findUserName(users, previousCommanderId)}`
-          : "First commander assignment recorded.",
-        meta: `by ${actorName}`,
-      };
-    }
-    case "participant_joined":
-    case "participant_left": {
-      const userId = payloadString(entry.payload, "userId");
-      const role = payloadString(entry.payload, "role");
-
-      return {
-        title: `${findUserName(users, userId)} ${
-          entry.kind === "participant_joined" ? "joined" : "left"
-        } the incident`,
-        accent: "Roster",
-        body: role ? `Role: ${role}` : "Role not provided.",
-        meta: `by ${actorName}`,
-      };
-    }
-    case "sitrep": {
-      const sitrepId = payloadString(entry.payload, "sitrepId");
-      const sitrep = sitreps.find((item) => item.id === sitrepId);
-
-      return {
-        title: sitrep ? "Situation report submitted" : "Sitrep recorded",
-        accent: sitrep?.severity ? `Severity ${sitrep.severity}` : "Sitrep",
-        body:
-          sitrep?.text ??
-          "The report exists in the timeline, but its body was not loaded into the current feed.",
-        meta: sitrep
-          ? `reported ${formatTaskRelative(sitrep.reportedAt)} by ${findUserName(users, sitrep.reporterId)}`
-          : `by ${actorName}`,
-      };
-    }
-    default: {
-      return {
-        title: entry.kind.replaceAll("_", " "),
-        accent: "Event",
-        body: "Detailed payload rendering for this event type is not defined yet.",
-        meta: `by ${actorName}`,
-      };
-    }
-  }
-}
 
 function getErrorMessage(body: unknown, status: number) {
   if (typeof body === "string" && body.trim()) {
@@ -574,44 +446,11 @@ export function IncidentActivityFeed({
         <div className="mt-5 space-y-3">
           {sitreps.length > 0 ? (
             sitreps.map((sitrep) => (
-              <article
+              <SitrepCard
                 key={sitrep.id}
-                className="rounded-[22px] border border-cyan-400/20 bg-cyan-400/7 px-4 py-4"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="text-sm font-medium text-white">
-                      {findUserName(users, sitrep.reporterId)}
-                    </div>
-                    <div className="mt-1 text-xs text-slate-400">
-                      Reported {formatTaskTimestamp(sitrep.reportedAt)}
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {sitrep.severity ? (
-                      <span className="rounded-full border border-rose-400/25 bg-rose-400/10 px-2.5 py-1 text-[11px] font-medium text-rose-100">
-                        Severity {sitrep.severity}
-                      </span>
-                    ) : null}
-                    {sitrep.location ? (
-                      <span className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[11px] font-medium text-slate-200">
-                        {sitrep.location.lat.toFixed(4)},{" "}
-                        {sitrep.location.lon.toFixed(4)}
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-
-                <p className="mt-3 text-sm leading-7 text-slate-300">
-                  {sitrep.text}
-                </p>
-
-                {sitrep.attachments.length > 0 ? (
-                  <div className="mt-3 text-xs text-slate-500">
-                    Attachments: {sitrep.attachments.length}
-                  </div>
-                ) : null}
-              </article>
+                sitrep={sitrep}
+                users={users}
+              />
             ))
           ) : (
             <div className="rounded-[22px] border border-dashed border-white/10 bg-black/10 px-4 py-10 text-center text-sm text-slate-500">
@@ -649,43 +488,13 @@ export function IncidentActivityFeed({
           </div>
         </div>
 
-        <div className="mt-5 space-y-3">
+        <div className="mt-5">
           {timeline.length > 0 ? (
-            timeline.map((entry) => {
-              const summary = describeTimelineEntry(entry, sitreps, users);
-
-              return (
-                <article
-                  key={entry.id}
-                  className={cn(
-                    "rounded-[22px] border px-4 py-4",
-                    eventTone(entry.kind),
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
-                        {summary.accent}
-                      </div>
-                      <h3 className="mt-2 text-sm font-medium text-white">
-                        {summary.title}
-                      </h3>
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      {formatTaskTimestamp(entry.ts)}
-                    </div>
-                  </div>
-
-                  <p className="mt-3 text-sm leading-7 text-slate-300">
-                    {summary.body}
-                  </p>
-
-                  <div className="mt-3 text-xs text-slate-500">
-                    {summary.meta}
-                  </div>
-                </article>
-              );
-            })
+            <IncidentTimeline
+              entries={timeline}
+              sitreps={sitreps}
+              users={users}
+            />
           ) : (
             <div className="rounded-[22px] border border-dashed border-white/10 bg-black/10 px-4 py-10 text-center text-sm text-slate-500">
               Timeline is empty in the current feed.

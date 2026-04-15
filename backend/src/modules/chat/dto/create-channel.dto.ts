@@ -22,7 +22,9 @@ export class CreateChannelDto {
   @MaxLength(160)
   name?: string;
 
-  @ApiPropertyOptional({ example: 'Inter-agency coordination for the northern sector.' })
+  @ApiPropertyOptional({
+    example: 'Inter-agency coordination for the northern sector.',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(2_000)

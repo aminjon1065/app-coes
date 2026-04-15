@@ -151,7 +151,8 @@ describe('TasksService', () => {
         if (entity === User) return usersRepository;
         if (entity === IncidentParticipant) return participantsRepository;
         if (entity === TaskComment) return commentsRepository;
-        if (entity === TaskAssignmentHistory) return assignmentHistoryRepository;
+        if (entity === TaskAssignmentHistory)
+          return assignmentHistoryRepository;
         return null;
       }),
     };
@@ -165,7 +166,8 @@ describe('TasksService', () => {
         if (entity === User) return usersRepository;
         if (entity === IncidentParticipant) return participantsRepository;
         if (entity === TaskComment) return commentsRepository;
-        if (entity === TaskAssignmentHistory) return assignmentHistoryRepository;
+        if (entity === TaskAssignmentHistory)
+          return assignmentHistoryRepository;
         return null;
       }),
       getManager: jest.fn(() => manager),
@@ -200,10 +202,12 @@ describe('TasksService', () => {
       id: 'task-1',
       ...payload,
     }));
-    assignmentHistoryRepository.save.mockImplementation(async (payload: any) => ({
-      id: 'history-1',
-      ...payload,
-    }));
+    assignmentHistoryRepository.save.mockImplementation(
+      async (payload: any) => ({
+        id: 'history-1',
+        ...payload,
+      }),
+    );
 
     jest.spyOn(service, 'findOne').mockResolvedValue({
       ...makeTask({ assigneeId: 'user-2', position: 3 }),
@@ -314,10 +318,12 @@ describe('TasksService', () => {
       userId: 'user-2',
       leftAt: null,
     });
-    assignmentHistoryRepository.save.mockImplementation(async (payload: any) => ({
-      id: 'history-1',
-      ...payload,
-    }));
+    assignmentHistoryRepository.save.mockImplementation(
+      async (payload: any) => ({
+        id: 'history-1',
+        ...payload,
+      }),
+    );
 
     jest.spyOn(service, 'findOne').mockResolvedValue({
       ...task,
@@ -397,7 +403,9 @@ describe('TasksService', () => {
       },
     } as any);
 
-    const result = await service.updatePosition(actor, 'task-2', { position: 0 });
+    const result = await service.updatePosition(actor, 'task-2', {
+      position: 0,
+    });
 
     expect(result.position).toBe(0);
     expect(taskManagerRepository.save).toHaveBeenCalledWith(
@@ -546,10 +554,12 @@ describe('TasksService', () => {
 
   it('groups tasks into board columns', async () => {
     const boardQb = makeQb({
-      getMany: jest.fn().mockResolvedValue([
-        makeTask({ id: 'task-todo', status: 'todo' }),
-        makeTask({ id: 'task-blocked', status: 'blocked' }),
-      ]),
+      getMany: jest
+        .fn()
+        .mockResolvedValue([
+          makeTask({ id: 'task-todo', status: 'todo' }),
+          makeTask({ id: 'task-blocked', status: 'blocked' }),
+        ]),
     });
     tasksRepository.createQueryBuilder.mockReturnValue(boardQb);
 

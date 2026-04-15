@@ -1,5 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsInt, IsObject, IsOptional, IsString, IsUUID, Length, Max, MaxLength, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsInt,
+  IsObject,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Length,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class CreateTaskDto {
   @ApiProperty({ example: 'Establish water distribution point at Sector 4' })
@@ -7,7 +18,9 @@ export class CreateTaskDto {
   @Length(3, 300)
   title: string;
 
-  @ApiPropertyOptional({ example: 'Coordinate logistics, volunteers, and security for the site.' })
+  @ApiPropertyOptional({
+    example: 'Coordinate logistics, volunteers, and security for the site.',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(10000)

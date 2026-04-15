@@ -56,9 +56,15 @@ describe('DocumentService', () => {
         { provide: EventEmitter2, useValue: events },
         { provide: getRepositoryToken(DocumentEntity), useValue: documentRepo },
         { provide: getRepositoryToken(DocumentVersion), useValue: versionRepo },
-        { provide: getRepositoryToken(DocumentApproval), useValue: approvalRepo },
+        {
+          provide: getRepositoryToken(DocumentApproval),
+          useValue: approvalRepo,
+        },
         { provide: getRepositoryToken(Incident), useValue: incidentRepo },
-        { provide: getRepositoryToken(IncidentParticipant), useValue: participantRepo },
+        {
+          provide: getRepositoryToken(IncidentParticipant),
+          useValue: participantRepo,
+        },
         { provide: getRepositoryToken(User), useValue: userRepo },
         { provide: getRepositoryToken(UserRole), useValue: userRoleRepo },
         { provide: getRepositoryToken(Role), useValue: roleRepo },
@@ -99,7 +105,10 @@ describe('DocumentService', () => {
       commanderId: 'user-1',
       createdBy: 'user-1',
     });
-    documentRepo.create.mockImplementation((value) => ({ id: 'doc-1', ...value }));
+    documentRepo.create.mockImplementation((value) => ({
+      id: 'doc-1',
+      ...value,
+    }));
     documentRepo.save
       .mockResolvedValueOnce({
         id: 'doc-1',
@@ -127,7 +136,10 @@ describe('DocumentService', () => {
       });
     renderer.renderFromTemplate.mockResolvedValue(Buffer.from('pdf'));
     versionRepo.count.mockResolvedValue(0);
-    versionRepo.create.mockImplementation((value) => ({ id: 'ver-1', ...value }));
+    versionRepo.create.mockImplementation((value) => ({
+      id: 'ver-1',
+      ...value,
+    }));
     versionRepo.save.mockResolvedValue({ id: 'ver-1' });
     documentRepo.createQueryBuilder.mockReturnValue({
       leftJoinAndSelect: jest.fn().mockReturnThis(),
@@ -156,7 +168,11 @@ describe('DocumentService', () => {
         clearance: 3,
         sessionId: 'session-1',
       },
-      { title: 'Report', templateCode: 'initial-report', incidentId: 'incident-1' },
+      {
+        title: 'Report',
+        templateCode: 'initial-report',
+        incidentId: 'incident-1',
+      },
     );
 
     expect(result.id).toBe('doc-1');

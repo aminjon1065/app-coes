@@ -19,7 +19,10 @@ export class CreateIncidentDto {
   @Length(3, 200)
   title: string;
 
-  @ApiPropertyOptional({ example: 'Initial field reports indicate structural damage in two districts.' })
+  @ApiPropertyOptional({
+    example:
+      'Initial field reports indicate structural damage in two districts.',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(5000)

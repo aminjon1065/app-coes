@@ -10,9 +10,14 @@ import { User } from '../../iam/entities/user.entity';
 import { DocumentEntity } from './document.entity';
 import { DocumentVersion } from './document-version.entity';
 
-export const DOCUMENT_APPROVAL_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'] as const;
+export const DOCUMENT_APPROVAL_STATUSES = [
+  'PENDING',
+  'APPROVED',
+  'REJECTED',
+] as const;
 
-export type DocumentApprovalStatus = (typeof DOCUMENT_APPROVAL_STATUSES)[number];
+export type DocumentApprovalStatus =
+  (typeof DOCUMENT_APPROVAL_STATUSES)[number];
 
 @Entity({ name: 'approvals', schema: 'document' })
 export class DocumentApproval {

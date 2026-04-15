@@ -129,6 +129,8 @@ export const INCIDENT_SITREP_DEFAULT_LIMIT = 8;
 
 export type IncidentWorkspace = {
   source: "api" | "mock";
+  currentUserId: string | null;
+  currentUserRoles: string[];
   incident: IncidentDto | null;
   incidents: IncidentDto[];
   participants: IncidentParticipantDto[];
@@ -178,6 +180,11 @@ async function fetchIncidentApi<T>(path: string): Promise<T> {
 
   return (await response.json()) as T;
 }
+
+type IncidentCurrentUser = {
+  id: string;
+  roles?: string[];
+};
 
 function buildQueryString(
   params: Record<string, string | number | null | undefined>,
@@ -406,6 +413,8 @@ export async function loadIncidentDirectory(
 
     return {
       source: "api",
+      currentUserId: null,
+      currentUserRoles: [],
       incident: null,
       incidents: sortIncidents(incidentsResponse.data, options?.sort),
       participants: [],
@@ -429,6 +438,8 @@ export async function loadIncidentDirectory(
 
     return {
       source: "mock",
+      currentUserId: "user-1",
+      currentUserRoles: ["incident_commander"],
       incident: null,
       incidents,
       participants: [],
@@ -462,6 +473,7 @@ export async function loadIncidentWorkspace(options: {
       sitrepsResponse,
       incidentsResponse,
       transitionsResponse,
+      currentUserResponse,
     ] = await Promise.all([
       fetchIncidentApi<{ data: IncidentDto }>(`/incidents/${options.incidentId}`),
       fetchIncidentApi<{ data: IncidentParticipantDto[] }>(
@@ -477,6 +489,7 @@ export async function loadIncidentWorkspace(options: {
       fetchIncidentApi<{ data: AvailableIncidentTransitionDto[] }>(
         `/incidents/${options.incidentId}/transitions/available`,
       ),
+      fetchIncidentApi<IncidentCurrentUser>("/auth/me"),
     ]);
 
     let tenantUsers: UserSummary[] = [];
@@ -505,6 +518,8 @@ export async function loadIncidentWorkspace(options: {
 
     return {
       source: "api",
+      currentUserId: currentUserResponse.id,
+      currentUserRoles: currentUserResponse.roles ?? [],
       incident: incidentResponse.data,
       incidents: incidentsResponse.data,
       participants: participantsResponse.data,
@@ -529,6 +544,8 @@ export async function loadIncidentWorkspace(options: {
 
     return {
       source: "mock",
+      currentUserId: "user-1",
+      currentUserRoles: ["incident_commander"],
       incident,
       incidents: taskWorkspace.visibleIncidents.map((item) =>
         deriveIncidentFromSummary(item, taskWorkspace.visibleUsers),

@@ -1,8 +1,18 @@
-import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { User } from './user.entity';
 
 @Entity({ name: 'sessions', schema: 'iam' })
-@Index('idx_sessions_user_active', ['userId'], { where: '"revoked_at" IS NULL' })
+@Index('idx_sessions_user_active', ['userId'], {
+  where: '"revoked_at" IS NULL',
+})
 export class Session {
   @PrimaryGeneratedColumn('uuid')
   id: string;

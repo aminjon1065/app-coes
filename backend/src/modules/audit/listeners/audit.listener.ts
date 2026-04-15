@@ -20,7 +20,10 @@ type DomainEventPayload = {
 
 @Injectable()
 export class AuditListener implements OnModuleInit, OnModuleDestroy {
-  private readonly listener = async (event: string | string[] | symbol, payload: unknown) => {
+  private readonly listener = async (
+    event: string | string[] | symbol,
+    payload: unknown,
+  ) => {
     const eventType = Array.isArray(event)
       ? event.join('.')
       : typeof event === 'string'
@@ -110,7 +113,9 @@ export class AuditListener implements OnModuleInit, OnModuleDestroy {
     delete clone.userAgent;
     delete clone.sessionId;
 
-    return Object.keys(clone).length ? clone : this.fallbackAfter(eventType, payload);
+    return Object.keys(clone).length
+      ? clone
+      : this.fallbackAfter(eventType, payload);
   }
 
   private fallbackAfter(

@@ -16,7 +16,10 @@ import { CreateUserDto } from '../dto/create-user.dto';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
 import { Permissions } from '../../../shared/auth/permissions.decorator';
 import { PermissionsGuard } from '../../../shared/auth/permissions.guard';
-import { CurrentUser, type RequestUser } from '../../../shared/auth/current-user.decorator';
+import {
+  CurrentUser,
+  type RequestUser,
+} from '../../../shared/auth/current-user.decorator';
 import { Roles } from '../../../shared/auth/roles.decorator';
 import { RolesGuard } from '../../../shared/auth/roles.guard';
 import { TenantAccessGuard } from '../../../shared/auth/tenant-access.guard';
@@ -29,7 +32,7 @@ export class UsersController {
   constructor(private readonly users: UsersService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a user in the calling user\'s tenant' })
+  @ApiOperation({ summary: "Create a user in the calling user's tenant" })
   @Roles('tenant_admin', 'platform_admin')
   @Permissions('iam.users.create')
   create(@CurrentUser() caller: RequestUser, @Body() dto: CreateUserDto) {
@@ -37,7 +40,7 @@ export class UsersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List users in the calling user\'s tenant' })
+  @ApiOperation({ summary: "List users in the calling user's tenant" })
   @Roles('tenant_admin', 'shift_lead', 'platform_admin')
   @Permissions('iam.users.read')
   findAll(@CurrentUser() caller: RequestUser) {

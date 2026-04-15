@@ -48,9 +48,7 @@ describe('PermissionsGuard', () => {
   });
 
   it('loads permissions and allows access', async () => {
-    reflector.getAllAndOverride = jest
-      .fn()
-      .mockReturnValue(['iam.users.read']);
+    reflector.getAllAndOverride = jest.fn().mockReturnValue(['iam.users.read']);
     authorization.getPermissionsForUser = jest
       .fn()
       .mockResolvedValue(['iam.users.read']);

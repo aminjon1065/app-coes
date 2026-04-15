@@ -36,7 +36,10 @@ export class AnalyticsListener {
 
   @OnEvent('task.status_changed', { async: true })
   async onTaskStatusChanged(event: TaskEvent) {
-    if (event.taskId && ['done', 'cancelled'].includes(event.after ?? event.status ?? '')) {
+    if (
+      event.taskId &&
+      ['done', 'cancelled'].includes(event.after ?? event.status ?? '')
+    ) {
       await this.etl.materializeTask(event.taskId);
     }
   }

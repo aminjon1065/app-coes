@@ -12,7 +12,19 @@ export type IncidentMutationState = {
   submissionId?: string;
 };
 
+export type LiaisonInviteMutationState = {
+  status: IncidentMutationStatus;
+  message: string;
+  inviteUrl?: string;
+  submissionId?: string;
+};
+
 export const INITIAL_INCIDENT_MUTATION_STATE: IncidentMutationState = {
+  status: "idle",
+  message: "",
+};
+
+export const INITIAL_LIAISON_INVITE_MUTATION_STATE: LiaisonInviteMutationState = {
   status: "idle",
   message: "",
 };
@@ -185,6 +197,29 @@ function resolveIncidentRedirect(formData: FormData, incidentId: string) {
     optionalTrimmedString(formData, "redirectPath") ??
     `/incidents/${incidentId}?tab=overview`
   );
+}
+
+function successInviteState(
+  message: string,
+  inviteUrl: string,
+): LiaisonInviteMutationState {
+  return {
+    status: "success",
+    message,
+    inviteUrl,
+    submissionId: crypto.randomUUID(),
+  };
+}
+
+function errorInviteState(error: unknown): LiaisonInviteMutationState {
+  return {
+    status: "error",
+    message:
+      error instanceof Error
+        ? error.message
+        : "Invitation action failed unexpectedly.",
+    submissionId: crypto.randomUUID(),
+  };
 }
 
 function revalidateIncidentViews(incidentId: string) {
@@ -424,5 +459,45 @@ export async function submitIncidentSitrepAction(
     );
   } catch (error) {
     return errorState(error);
+  }
+}
+
+export async function createLiaisonInvitationAction(
+  _previousState: LiaisonInviteMutationState,
+  formData: FormData,
+): Promise<LiaisonInviteMutationState> {
+  try {
+    const incidentId = requiredTrimmedString(formData, "incidentId", "Incident");
+    const tenantId = requiredTrimmedString(formData, "tenantId", "Tenant");
+    const email = requiredTrimmedString(formData, "email", "Email");
+    const additionalScope = optionalTrimmedString(formData, "additionalIncidentScope");
+    const incidentScope = [
+      incidentId,
+      ...(additionalScope
+        ? additionalScope
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean)
+        : []),
+    ];
+
+    const response = await incidentApiRequest<{
+      data: { inviteUrl: string };
+    }>(`/tenants/${tenantId}/invite`, {
+      method: "POST",
+      body: JSON.stringify({
+        email,
+        incidentScope: Array.from(new Set(incidentScope)),
+      }),
+    });
+
+    revalidateIncidentViews(incidentId);
+
+    return successInviteState(
+      "Liaison invitation created.",
+      response.data.inviteUrl,
+    );
+  } catch (error) {
+    return errorInviteState(error);
   }
 }

@@ -30,7 +30,14 @@ export class NotificationController {
 
   @Get()
   @ApiOperation({ summary: 'List unread notifications for current user' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'tenant_admin',
+    'platform_admin',
+  )
   @Permissions('notification.read')
   async list(
     @CurrentUser() actor: RequestUser,
@@ -41,7 +48,14 @@ export class NotificationController {
 
   @Patch(':id/read')
   @ApiOperation({ summary: 'Mark one notification as read' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'tenant_admin',
+    'platform_admin',
+  )
   @Permissions('notification.read')
   async markRead(
     @CurrentUser() actor: RequestUser,
@@ -52,7 +66,14 @@ export class NotificationController {
 
   @Patch('read-all')
   @ApiOperation({ summary: 'Mark all notifications as read' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'tenant_admin',
+    'platform_admin',
+  )
   @Permissions('notification.read')
   async markAllRead(@CurrentUser() actor: RequestUser) {
     return { data: await this.notifications.markAllRead(actor) };
@@ -60,7 +81,14 @@ export class NotificationController {
 
   @Get('preferences')
   @ApiOperation({ summary: 'Get notification preferences' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'tenant_admin',
+    'platform_admin',
+  )
   @Permissions('notification.read')
   async getPreferences(@CurrentUser() actor: RequestUser) {
     return { data: await this.notifications.getPreferences(actor) };
@@ -68,7 +96,14 @@ export class NotificationController {
 
   @Patch('preferences')
   @ApiOperation({ summary: 'Update notification preferences' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'tenant_admin',
+    'platform_admin',
+  )
   @Permissions('notification.read')
   async updatePreferences(
     @CurrentUser() actor: RequestUser,

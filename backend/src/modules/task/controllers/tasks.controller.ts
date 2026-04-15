@@ -49,10 +49,7 @@ export class TasksController {
   @ApiOperation({ summary: 'Create a task' })
   @Roles('incident_commander', 'shift_lead', 'tenant_admin', 'platform_admin')
   @Permissions('task.create')
-  async create(
-    @CurrentUser() actor: RequestUser,
-    @Body() dto: CreateTaskDto,
-  ) {
+  async create(@CurrentUser() actor: RequestUser, @Body() dto: CreateTaskDto) {
     return { data: await this.tasks.create(actor, dto) };
   }
 
@@ -85,10 +82,7 @@ export class TasksController {
     'platform_admin',
   )
   @Permissions('task.read')
-  async board(
-    @CurrentUser() actor: RequestUser,
-    @Query() query: TaskBoardDto,
-  ) {
+  async board(@CurrentUser() actor: RequestUser, @Query() query: TaskBoardDto) {
     return { data: await this.tasks.getBoard(actor, query) };
   }
 
@@ -103,10 +97,7 @@ export class TasksController {
     'platform_admin',
   )
   @Permissions('task.read')
-  async my(
-    @CurrentUser() actor: RequestUser,
-    @Query() query: ListTasksDto,
-  ) {
+  async my(@CurrentUser() actor: RequestUser, @Query() query: ListTasksDto) {
     return { data: await this.tasks.getMyTasks(actor, query) };
   }
 
@@ -203,7 +194,9 @@ export class TasksController {
   }
 
   @Get(':id/transitions/available')
-  @ApiOperation({ summary: 'List task transitions currently available to the caller' })
+  @ApiOperation({
+    summary: 'List task transitions currently available to the caller',
+  })
   @Roles(
     'duty_operator',
     'shift_lead',

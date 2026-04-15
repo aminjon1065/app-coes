@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { DatabaseModule } from '../../shared/database/database.module';
 import { User } from '../iam/entities/user.entity';
 import { FileController } from './controllers/file.controller';
 import { FileVariantEntity } from './entities/file-variant.entity';
@@ -10,7 +11,11 @@ import { FileService } from './services/file.service';
 import { MinioService } from './services/minio.service';
 
 @Module({
-  imports: [ConfigModule, TypeOrmModule.forFeature([FileEntity, FileVariantEntity, User])],
+  imports: [
+    ConfigModule,
+    DatabaseModule,
+    TypeOrmModule.forFeature([FileEntity, FileVariantEntity, User]),
+  ],
   providers: [FileService, MinioService, FileScanService],
   controllers: [FileController],
   exports: [FileService, MinioService],

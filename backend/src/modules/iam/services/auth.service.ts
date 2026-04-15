@@ -12,6 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { createHash, randomBytes } from 'crypto';
 import * as argon2 from 'argon2';
 import Redis from 'ioredis';
+import QRCode from 'qrcode';
 import { User } from '../entities/user.entity';
 import { Session } from '../entities/session.entity';
 import { UserRole } from '../entities/user-role.entity';
@@ -27,9 +28,9 @@ export interface TokenPair {
 }
 
 export interface JwtPayload {
-  sub: string;        // userId
-  tid: string;        // tenantId
-  roles: string[];    // role codes
+  sub: string; // userId
+  tid: string; // tenantId
+  roles: string[]; // role codes
   clearance: number;
   sessionId: string;
 }
@@ -61,10 +62,22 @@ export class AuthService {
 
   // ── Login ──────────────────────────────────────────────────────────────────
 
-  async login(dto: LoginDto, ip: string, userAgent: string): Promise<TokenPair> {
+  async login(
+    dto: LoginDto,
+    ip: string,
+    userAgent: string,
+  ): Promise<TokenPair> {
     const user = await this.users.findOne({
       where: { email: dto.email.toLowerCase() },
-      select: { id: true, tenantId: true, passwordHash: true, status: true, mfaEnabled: true, clearance: true, attributes: true },
+      select: {
+        id: true,
+        tenantId: true,
+        passwordHash: true,
+        status: true,
+        mfaEnabled: true,
+        clearance: true,
+        attributes: true,
+      },
     });
 
     if (!user || !(await argon2.verify(user.passwordHash!, dto.password))) {
@@ -86,7 +99,7 @@ export class AuthService {
     }
 
     // Fetch role codes for JWT payload
-    const roleCodes = await this.getRoleCodes(user.id);
+    const roleCodes = await this.getRoleCodes(user.id, user.tenantId);
 
     // Create session
     const pair = await this.createSession(user, roleCodes, ip, userAgent);
@@ -99,7 +112,11 @@ export class AuthService {
 
   // ── Refresh ────────────────────────────────────────────────────────────────
 
-  async refresh(rawToken: string, ip: string, userAgent: string): Promise<TokenPair> {
+  async refresh(
+    rawToken: string,
+    ip: string,
+    userAgent: string,
+  ): Promise<TokenPair> {
     const hash = this.hashToken(rawToken);
 
     // Check revocation in Redis (fast path)
@@ -124,7 +141,7 @@ export class AuthService {
     // Revoke old session (rotation)
     await this.sessions.update(session.id, { revokedAt: new Date() });
 
-    const roleCodes = await this.getRoleCodes(user.id);
+    const roleCodes = await this.getRoleCodes(user.id, user.tenantId);
     return this.createSession(user, roleCodes, ip, userAgent);
   }
 
@@ -137,15 +154,24 @@ export class AuthService {
     await this.sessions.update(sessionId, { revokedAt: new Date() });
 
     // Cache revocation in Redis for fast-path checks (TTL = session expiry)
-    const ttl = Math.max(0, Math.floor((session.expiresAt.getTime() - Date.now()) / 1000));
+    const ttl = Math.max(
+      0,
+      Math.floor((session.expiresAt.getTime() - Date.now()) / 1000),
+    );
     if (ttl > 0) {
-      await this.redis.setex(`session:revoked:${session.refreshHash}`, ttl, '1');
+      await this.redis.setex(
+        `session:revoked:${session.refreshHash}`,
+        ttl,
+        '1',
+      );
     }
   }
 
   // ── MFA enrollment ─────────────────────────────────────────────────────────
 
-  async enrollMfa(userId: string): Promise<{ uri: string; secret: string }> {
+  async enrollMfa(
+    userId: string,
+  ): Promise<{ uri: string; secret: string; qrCodeDataUrl: string }> {
     const user = await this.users.findOne({
       where: { id: userId },
       select: { id: true, email: true, attributes: true },
@@ -153,15 +179,27 @@ export class AuthService {
     if (!user) throw new NotFoundException('User not found');
 
     const secret = this.totp.generateSecret();
+    const pendingAttributes = JSON.stringify({
+      ...(user.attributes ?? {}),
+      mfa_pending_secret: secret,
+    });
     await this.users
       .createQueryBuilder()
       .update()
-      .set({ attributes: () => `attributes || '{"mfa_secret": "${secret}"}'::jsonb` })
+      .set({
+        attributes: () => `'${pendingAttributes.replace(/'/g, "''")}'::jsonb`,
+      })
       .where('id = :id', { id: userId })
       .execute();
 
     const issuer = this.config.get<string>('MFA_ISSUER', 'CoESCD');
-    return { secret, uri: this.totp.buildUri(secret, user.email, issuer) };
+    const uri = this.totp.buildUri(secret, user.email, issuer);
+    const qrCodeDataUrl = await QRCode.toDataURL(uri, {
+      errorCorrectionLevel: 'M',
+      margin: 1,
+      width: 256,
+    });
+    return { secret, uri, qrCodeDataUrl };
   }
 
   async confirmMfa(userId: string, code: string): Promise<void> {
@@ -171,12 +209,93 @@ export class AuthService {
     });
     if (!user) throw new NotFoundException('User not found');
 
-    const secret = (user.attributes as any)?.mfa_secret as string;
+    const secret = (user.attributes as any)?.mfa_pending_secret as string;
     if (!secret || !this.totp.verify(secret, code)) {
       throw new UnauthorizedException('Invalid MFA code');
     }
 
-    await this.users.update(userId, { mfaEnabled: true });
+    const nextAttributes = {
+      ...(user.attributes ?? {}),
+      mfa_secret: secret,
+    };
+    delete (nextAttributes as Record<string, unknown>).mfa_pending_secret;
+
+    const enabledAttributes = JSON.stringify(nextAttributes);
+    await this.users
+      .createQueryBuilder()
+      .update()
+      .set({
+        mfaEnabled: true,
+        attributes: () => `'${enabledAttributes.replace(/'/g, "''")}'::jsonb`,
+      })
+      .where('id = :id', { id: userId })
+      .execute();
+  }
+
+  async disableMfa(userId: string, currentPassword: string): Promise<void> {
+    const user = await this.users.findOne({
+      where: { id: userId },
+      select: {
+        id: true,
+        passwordHash: true,
+        mfaEnabled: true,
+        attributes: true,
+      },
+    });
+    if (!user) throw new NotFoundException('User not found');
+    if (!user.mfaEnabled) {
+      return;
+    }
+    if (
+      !user.passwordHash ||
+      !(await argon2.verify(user.passwordHash, currentPassword))
+    ) {
+      throw new UnauthorizedException('Current password is invalid');
+    }
+
+    const nextAttributes = { ...(user.attributes ?? {}) };
+    delete nextAttributes.mfa_secret;
+    delete nextAttributes.mfa_pending_secret;
+
+    const disabledAttributes = JSON.stringify(nextAttributes);
+    await this.users
+      .createQueryBuilder()
+      .update()
+      .set({
+        mfaEnabled: false,
+        attributes: () => `'${disabledAttributes.replace(/'/g, "''")}'::jsonb`,
+      })
+      .where('id = :id', { id: userId })
+      .execute();
+  }
+
+  async getSessionProfile(user: JwtPayload): Promise<{
+    id: string;
+    tenantId: string;
+    roles: string[];
+    permissions: string[];
+    clearance: number;
+    sessionId: string;
+    mfaEnabled: boolean;
+  }> {
+    const [sessionUser, roleCodes, permissions] = await Promise.all([
+      this.users.findOne({
+        where: { id: user.sub },
+        select: { id: true, mfaEnabled: true },
+      }),
+      this.getRoleCodes(user.sub, user.tid),
+      this.getPermissionCodes(user.sub, user.tid),
+    ]);
+
+    return {
+      id: user.sub,
+      tenantId: user.tid,
+      roles: roleCodes,
+      permissions,
+      clearance: user.clearance,
+      sessionId: user.sessionId,
+      mfaEnabled: sessionUser?.mfaEnabled ?? false,
+    };
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -189,7 +308,9 @@ export class AuthService {
   ): Promise<TokenPair> {
     const rawToken = randomBytes(48).toString('hex');
     const hash = this.hashToken(rawToken);
-    const expiryMs = this.parseMs(this.config.get<string>('JWT_REFRESH_EXPIRY', '8h'));
+    const expiryMs = this.parseMs(
+      this.config.get<string>('JWT_REFRESH_EXPIRY', '8h'),
+    );
 
     const session = this.sessions.create({
       userId: user.id,
@@ -209,16 +330,59 @@ export class AuthService {
       sessionId: session.id,
     };
 
-    const accessToken = this.jwt.sign(payload as any, { expiresIn: accessExpiry as any });
-    return { accessToken, refreshToken: rawToken, expiresIn: this.parseMs(accessExpiry) / 1000 };
+    const accessToken = this.jwt.sign(payload as any, {
+      expiresIn: accessExpiry as any,
+    });
+    return {
+      accessToken,
+      refreshToken: rawToken,
+      expiresIn: this.parseMs(accessExpiry) / 1000,
+    };
   }
 
-  private async getRoleCodes(userId: string): Promise<string[]> {
-    const userRoles = await this.userRoles.find({
-      where: { userId },
-      relations: ['role'],
-    });
-    return userRoles.map((ur) => ur.role.code);
+  private async getRoleCodes(
+    userId: string,
+    tenantId: string,
+  ): Promise<string[]> {
+    const userRoles = await this.userRoles
+      .createQueryBuilder('userRole')
+      .innerJoinAndSelect('userRole.role', 'role')
+      .where('userRole.user_id = :userId', { userId })
+      .andWhere('(userRole.expires_at IS NULL OR userRole.expires_at > NOW())')
+      .andWhere('(role.tenant_id IS NULL OR role.tenant_id = :tenantId)', {
+        tenantId,
+      })
+      .getMany();
+
+    return [...new Set(userRoles.map((userRole) => userRole.role.code))];
+  }
+
+  private async getPermissionCodes(
+    userId: string,
+    tenantId: string,
+  ): Promise<string[]> {
+    const rows = await this.userRoles
+      .createQueryBuilder('userRole')
+      .innerJoin('iam.roles', 'role', 'role.id = userRole.role_id')
+      .innerJoin(
+        'iam.role_permissions',
+        'rolePermission',
+        'rolePermission.role_id = role.id',
+      )
+      .innerJoin(
+        'iam.permissions',
+        'permission',
+        'permission.id = rolePermission.permission_id',
+      )
+      .where('userRole.user_id = :userId', { userId })
+      .andWhere('(userRole.expires_at IS NULL OR userRole.expires_at > NOW())')
+      .andWhere('(role.tenant_id IS NULL OR role.tenant_id = :tenantId)', {
+        tenantId,
+      })
+      .select('permission.code', 'code')
+      .getRawMany<{ code: string }>();
+
+    return [...new Set(rows.map((row) => row.code))];
   }
 
   private hashToken(raw: string): string {
@@ -226,7 +390,12 @@ export class AuthService {
   }
 
   private parseMs(duration: string): number {
-    const units: Record<string, number> = { s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 };
+    const units: Record<string, number> = {
+      s: 1000,
+      m: 60_000,
+      h: 3_600_000,
+      d: 86_400_000,
+    };
     const match = duration.match(/^(\d+)([smhd])$/);
     if (!match) return 600_000;
     return parseInt(match[1], 10) * units[match[2]];

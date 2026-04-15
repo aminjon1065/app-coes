@@ -22,7 +22,10 @@ async function bootstrap() {
         : undefined,
   });
 
-  const app = await NestFactory.create(AppModule, { logger: false });
+  const app = await NestFactory.create(AppModule, {
+    logger: false,
+    abortOnError: false,
+  });
   const config = app.get(ConfigService);
 
   // ── Security headers ─────────────────────────────────────────────────────────
@@ -38,7 +41,10 @@ async function bootstrap() {
     compression({
       filter: (req, res) => {
         const accept = req.headers.accept ?? '';
-        if (typeof accept === 'string' && accept.includes('text/event-stream')) {
+        if (
+          typeof accept === 'string' &&
+          accept.includes('text/event-stream')
+        ) {
           return false;
         }
         return compression.filter(req, res);

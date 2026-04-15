@@ -39,7 +39,10 @@ export class NotificationPreference {
   inAppEnabled: boolean;
 
   @Column({ name: 'event_overrides', type: 'jsonb', default: {} })
-  eventOverrides: Record<string, { email?: boolean; push?: boolean; inApp?: boolean }>;
+  eventOverrides: Record<
+    string,
+    { email?: boolean; push?: boolean; inApp?: boolean }
+  >;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;

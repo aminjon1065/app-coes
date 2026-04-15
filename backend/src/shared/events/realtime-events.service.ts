@@ -1,4 +1,9 @@
-import { Injectable, MessageEvent, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  MessageEvent,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Observable, Subject, interval, merge } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
@@ -31,7 +36,10 @@ type DomainEventPayload = {
 export class RealtimeEventsService implements OnModuleInit, OnModuleDestroy {
   private readonly events$ = new Subject<RealtimeDomainEvent>();
 
-  private readonly listener = (event: string | string[] | symbol, payload: unknown) => {
+  private readonly listener = (
+    event: string | string[] | symbol,
+    payload: unknown,
+  ) => {
     const name = Array.isArray(event)
       ? event.join('.')
       : typeof event === 'string'
@@ -87,7 +95,10 @@ export class RealtimeEventsService implements OnModuleInit, OnModuleDestroy {
         if (event.tenantId !== filterBy.tenantId) {
           return false;
         }
-        if (filterBy.eventPrefix && !event.event.startsWith(filterBy.eventPrefix)) {
+        if (
+          filterBy.eventPrefix &&
+          !event.event.startsWith(filterBy.eventPrefix)
+        ) {
           return false;
         }
         if (filterBy.incidentId && event.incidentId !== filterBy.incidentId) {

@@ -44,7 +44,10 @@ export class ChatIncidentListener {
         event.actorId,
       );
     } catch (error) {
-      this.logger.warn({ error, incidentId: event.incidentId }, 'Failed to create incident room');
+      this.logger.warn(
+        { error, incidentId: event.incidentId },
+        'Failed to create incident room',
+      );
     }
   }
 
@@ -59,7 +62,10 @@ export class ChatIncidentListener {
         event.actorId,
       );
     } catch (error) {
-      this.logger.warn({ error, incidentId: event.incidentId }, 'Failed to sync incident room members');
+      this.logger.warn(
+        { error, incidentId: event.incidentId },
+        'Failed to sync incident room members',
+      );
     }
   }
 }

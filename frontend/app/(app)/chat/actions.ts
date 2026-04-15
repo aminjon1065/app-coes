@@ -16,6 +16,19 @@ export const INITIAL_CHAT_MUTATION_STATE: ChatMutationState = {
   message: "",
 };
 
+export type CallMutationState = {
+  status: ChatMutationStatus;
+  message: string;
+  submissionId?: string;
+  call?: import("@/lib/api/call-workspace").CallSessionState | null;
+};
+
+export const INITIAL_CALL_MUTATION_STATE: CallMutationState = {
+  status: "idle",
+  message: "",
+  call: null,
+};
+
 const API_BASE_URL =
   process.env.COESCD_API_BASE_URL ??
   process.env.NEXT_PUBLIC_COESCD_API_BASE_URL ??
@@ -146,5 +159,49 @@ export async function sendChatMessageAction(
     return successState("Message sent.");
   } catch (error) {
     return errorState(error);
+  }
+}
+
+export async function startCallAction(
+  _previousState: CallMutationState,
+  formData: FormData,
+): Promise<CallMutationState> {
+  try {
+    const channelId = stringField(formData, "channelId").trim();
+    const incidentId = stringField(formData, "incidentId").trim();
+    const title = stringField(formData, "title").trim();
+
+    if (!channelId && !incidentId) {
+      throw new Error("Channel or incident scope is required.");
+    }
+
+    const response = await chatApiRequest<{
+      data: import("@/lib/api/call-workspace").CallSessionState;
+    }>("/calls/start", {
+      method: "POST",
+      body: JSON.stringify({
+        channelId: channelId || undefined,
+        incidentId: incidentId || undefined,
+        title: title || undefined,
+      }),
+    });
+
+    revalidatePath("/chat");
+    revalidatePath("/incidents");
+
+    return {
+      status: "success",
+      message: "Call started.",
+      call: response.data,
+      submissionId: crypto.randomUUID(),
+    };
+  } catch (error) {
+    return {
+      status: "error",
+      message:
+        error instanceof Error ? error.message : "Call action failed unexpectedly.",
+      call: null,
+      submissionId: crypto.randomUUID(),
+    };
   }
 }

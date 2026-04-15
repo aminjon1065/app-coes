@@ -60,7 +60,11 @@ export class PdfRenderService {
   private interpolate(source: string, vars: Record<string, unknown>): string {
     return source.replace(/\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/g, (_match, key) => {
       const value = key.split('.').reduce((acc: unknown, part: string) => {
-        if (acc && typeof acc === 'object' && part in (acc as Record<string, unknown>)) {
+        if (
+          acc &&
+          typeof acc === 'object' &&
+          part in (acc as Record<string, unknown>)
+        ) {
           return (acc as Record<string, unknown>)[part];
         }
         return '';

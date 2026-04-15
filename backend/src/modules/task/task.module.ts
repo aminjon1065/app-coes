@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { DatabaseModule } from '../../shared/database/database.module';
 import { User } from '../iam/entities/user.entity';
 import { IncidentParticipant } from '../incident/entities/incident-participant.entity';
 import { Incident } from '../incident/entities/incident.entity';
@@ -12,6 +13,7 @@ import { RealtimeEventsService } from '../../shared/events/realtime-events.servi
 
 @Module({
   imports: [
+    DatabaseModule,
     TypeOrmModule.forFeature([
       Task,
       TaskComment,

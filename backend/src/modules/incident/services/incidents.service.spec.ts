@@ -103,11 +103,7 @@ describe('IncidentsService', () => {
       emit: jest.fn(),
     } as unknown as EventEmitter2;
 
-    service = new IncidentsService(
-      dataSource,
-      databaseContext,
-      events,
-    );
+    service = new IncidentsService(dataSource, databaseContext, events);
   });
 
   it('creates incident draft and initial timeline entry', async () => {

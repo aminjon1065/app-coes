@@ -12,7 +12,9 @@ import {
 } from 'class-validator';
 
 export class UpdateTaskDto {
-  @ApiPropertyOptional({ example: 'Establish water distribution point at Sector 4' })
+  @ApiPropertyOptional({
+    example: 'Establish water distribution point at Sector 4',
+  })
   @IsOptional()
   @IsString()
   @Length(3, 300)

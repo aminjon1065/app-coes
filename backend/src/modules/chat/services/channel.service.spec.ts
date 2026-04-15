@@ -52,7 +52,10 @@ describe('ChannelService', () => {
           useValue: {},
         },
         { provide: getRepositoryToken(Channel), useValue: channelRepo },
-        { provide: getRepositoryToken(ChannelMember), useValue: channelMemberRepo },
+        {
+          provide: getRepositoryToken(ChannelMember),
+          useValue: channelMemberRepo,
+        },
         { provide: getRepositoryToken(Message), useValue: messageRepo },
         { provide: getRepositoryToken(User), useValue: userRepo },
         { provide: getRepositoryToken(Incident), useValue: incidentRepo },
@@ -92,7 +95,10 @@ describe('ChannelService', () => {
       { id: 'user-2', tenantId: actor.tenantId, status: 'active' },
     ]);
     channelRepo.find.mockResolvedValue([]);
-    channelRepo.create.mockImplementation((value) => ({ id: 'channel-1', ...value }));
+    channelRepo.create.mockImplementation((value) => ({
+      id: 'channel-1',
+      ...value,
+    }));
     channelRepo.save.mockResolvedValue({
       id: 'channel-1',
       tenantId: actor.tenantId,
@@ -158,7 +164,11 @@ describe('ChannelService', () => {
     });
     messageRepo.findOne.mockResolvedValue(null);
 
-    await service.syncIncidentParticipants(actor.tenantId, 'incident-1', actor.id);
+    await service.syncIncidentParticipants(
+      actor.tenantId,
+      'incident-1',
+      actor.id,
+    );
 
     expect(channelMemberRepo.save).toHaveBeenCalled();
   });

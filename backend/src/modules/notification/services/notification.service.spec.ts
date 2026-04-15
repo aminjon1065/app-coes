@@ -43,11 +43,20 @@ describe('NotificationService', () => {
         { provide: DataSource, useValue: {} },
         { provide: InAppService, useValue: inApp },
         { provide: EmailService, useValue: email },
-        { provide: getRepositoryToken(NotificationEntity), useValue: notificationRepo },
-        { provide: getRepositoryToken(NotificationPreference), useValue: preferenceRepo },
+        {
+          provide: getRepositoryToken(NotificationEntity),
+          useValue: notificationRepo,
+        },
+        {
+          provide: getRepositoryToken(NotificationPreference),
+          useValue: preferenceRepo,
+        },
         { provide: getRepositoryToken(User), useValue: userRepo },
         { provide: getRepositoryToken(Incident), useValue: incidentRepo },
-        { provide: getRepositoryToken(IncidentParticipant), useValue: participantRepo },
+        {
+          provide: getRepositoryToken(IncidentParticipant),
+          useValue: participantRepo,
+        },
         { provide: getRepositoryToken(Task), useValue: taskRepo },
       ],
     }).compile();

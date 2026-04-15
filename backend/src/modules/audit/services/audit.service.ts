@@ -29,7 +29,10 @@ export class AuditService {
   ) {}
 
   private get events(): Repository<AuditEventEntity> {
-    return this.databaseContext.getRepository(this.dataSource, AuditEventEntity);
+    return this.databaseContext.getRepository(
+      this.dataSource,
+      AuditEventEntity,
+    );
   }
 
   async record(data: CreateAuditEventInput): Promise<void> {
@@ -73,10 +76,14 @@ export class AuditService {
       qb.andWhere('audit.actor_id = :actorId', { actorId: query.actorId });
     }
     if (query.eventType) {
-      qb.andWhere('audit.event_type = :eventType', { eventType: query.eventType });
+      qb.andWhere('audit.event_type = :eventType', {
+        eventType: query.eventType,
+      });
     }
     if (query.targetType) {
-      qb.andWhere('audit.target_type = :targetType', { targetType: query.targetType });
+      qb.andWhere('audit.target_type = :targetType', {
+        targetType: query.targetType,
+      });
     }
     if (query.targetId) {
       qb.andWhere('audit.target_id = :targetId', { targetId: query.targetId });
@@ -116,7 +123,9 @@ export class AuditService {
   }
 
   async findOne(actor: RequestUser, id: string): Promise<AuditEventEntity> {
-    const qb = this.events.createQueryBuilder('audit').where('audit.id = :id', { id });
+    const qb = this.events
+      .createQueryBuilder('audit')
+      .where('audit.id = :id', { id });
 
     if (!actor.roles.includes('platform_admin')) {
       qb.andWhere('audit.tenant_id = :tenantId', { tenantId: actor.tenantId });
@@ -129,7 +138,10 @@ export class AuditService {
     return event;
   }
 
-  async exportCsv(actor: RequestUser, query: ListAuditEventsDto): Promise<string> {
+  async exportCsv(
+    actor: RequestUser,
+    query: ListAuditEventsDto,
+  ): Promise<string> {
     const { data } = await this.list(actor, {
       ...query,
       limit: Math.min(query.limit ?? 200, 200),

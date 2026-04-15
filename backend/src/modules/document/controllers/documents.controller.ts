@@ -33,21 +33,43 @@ export class DocumentsController {
   @ApiOperation({ summary: 'Create document from template' })
   @Roles('incident_commander', 'tenant_admin', 'platform_admin')
   @Permissions('document.create')
-  async create(@CurrentUser() actor: RequestUser, @Body() dto: CreateDocumentDto) {
+  async create(
+    @CurrentUser() actor: RequestUser,
+    @Body() dto: CreateDocumentDto,
+  ) {
     return { data: await this.documents.create(actor, dto) };
   }
 
   @Get()
   @ApiOperation({ summary: 'List visible documents' })
-  @Roles('shift_lead', 'incident_commander', 'tenant_admin', 'platform_admin', 'agency_liaison', 'analyst', 'auditor')
+  @Roles(
+    'shift_lead',
+    'incident_commander',
+    'tenant_admin',
+    'platform_admin',
+    'agency_liaison',
+    'analyst',
+    'auditor',
+  )
   @Permissions('document.read')
-  async list(@CurrentUser() actor: RequestUser, @Query() query: ListDocumentsDto) {
+  async list(
+    @CurrentUser() actor: RequestUser,
+    @Query() query: ListDocumentsDto,
+  ) {
     return { data: await this.documents.list(actor, query) };
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get document detail' })
-  @Roles('shift_lead', 'incident_commander', 'tenant_admin', 'platform_admin', 'agency_liaison', 'analyst', 'auditor')
+  @Roles(
+    'shift_lead',
+    'incident_commander',
+    'tenant_admin',
+    'platform_admin',
+    'agency_liaison',
+    'analyst',
+    'auditor',
+  )
   @Permissions('document.read')
   async getOne(
     @CurrentUser() actor: RequestUser,
@@ -58,7 +80,15 @@ export class DocumentsController {
 
   @Get(':id/versions')
   @ApiOperation({ summary: 'List document versions' })
-  @Roles('shift_lead', 'incident_commander', 'tenant_admin', 'platform_admin', 'agency_liaison', 'analyst', 'auditor')
+  @Roles(
+    'shift_lead',
+    'incident_commander',
+    'tenant_admin',
+    'platform_admin',
+    'agency_liaison',
+    'analyst',
+    'auditor',
+  )
   @Permissions('document.read')
   async versions(
     @CurrentUser() actor: RequestUser,
@@ -69,14 +99,24 @@ export class DocumentsController {
 
   @Get(':id/versions/:vid/url')
   @ApiOperation({ summary: 'Get presigned URL for document version' })
-  @Roles('shift_lead', 'incident_commander', 'tenant_admin', 'platform_admin', 'agency_liaison', 'analyst', 'auditor')
+  @Roles(
+    'shift_lead',
+    'incident_commander',
+    'tenant_admin',
+    'platform_admin',
+    'agency_liaison',
+    'analyst',
+    'auditor',
+  )
   @Permissions('document.read')
   async versionUrl(
     @CurrentUser() actor: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
     @Param('vid', ParseUUIDPipe) vid: string,
   ) {
-    return { data: { url: await this.documents.getVersionUrl(actor, id, vid) } };
+    return {
+      data: { url: await this.documents.getVersionUrl(actor, id, vid) },
+    };
   }
 
   @Post(':id/submit-review')

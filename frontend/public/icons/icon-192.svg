@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-labelledby="title desc">
+  <title>CoESCD Mobile Icon</title>
+  <desc>Emergency coordination mobile workspace icon.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#07101c" />
+    </linearGradient>
+    <linearGradient id="signal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#67e8f9" />
+      <stop offset="100%" stop-color="#f97316" />
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="42" fill="url(#bg)" />
+  <circle cx="96" cy="96" r="62" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="6" />
+  <path d="M96 54 126 72v48L96 138 66 120V72l30-18Z" fill="none" stroke="url(#signal)" stroke-width="10" stroke-linejoin="round" />
+  <path d="M96 74v44M74 96h44" stroke="#e2e8f0" stroke-width="10" stroke-linecap="round" />
+</svg>

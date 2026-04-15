@@ -60,6 +60,7 @@ export type ChatMessagePage = {
 
 export type ChatWorkspace = {
   source: "api" | "mock";
+  currentUserId: string | null;
   channels: ChatChannel[];
   activeChannel: ChatChannel | null;
   messages: ChatMessage[];
@@ -109,6 +110,10 @@ async function fetchChatApi<T>(path: string): Promise<T> {
 
   return (await response.json()) as T;
 }
+
+type ChatCurrentUser = {
+  id: string;
+};
 
 function buildMockChannels(incidentId?: string | null): ChatChannel[] {
   const now = new Date().toISOString();
@@ -196,6 +201,7 @@ function mockWorkspace(incidentId?: string | null, channelId?: string | null): C
 
   return {
     source: "mock",
+    currentUserId: "mock-lead",
     channels,
     activeChannel,
     messages: activeChannel ? buildMockMessages(activeChannel.id) : [],
@@ -249,7 +255,10 @@ export async function loadChatWorkspace({
   incidentId?: string | null;
 } = {}): Promise<ChatWorkspace> {
   try {
-    const channelResponse = await fetchChatApi<{ data: ChatChannel[] }>("/channels");
+    const [channelResponse, currentUser] = await Promise.all([
+      fetchChatApi<{ data: ChatChannel[] }>("/channels"),
+      fetchChatApi<ChatCurrentUser>("/auth/me"),
+    ]);
     const channels = channelResponse.data;
     const activeChannel =
       (incidentId
@@ -270,6 +279,7 @@ export async function loadChatWorkspace({
 
     return {
       source: "api",
+      currentUserId: currentUser.id,
       channels,
       activeChannel,
       messages: messageResponse.data.slice().reverse(),

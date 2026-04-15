@@ -30,7 +30,9 @@ export class UsersService {
   }
 
   async create(tenantId: string, dto: CreateUserDto): Promise<User> {
-    const exists = await this.users.findOne({ where: { email: dto.email.toLowerCase() } });
+    const exists = await this.users.findOne({
+      where: { email: dto.email.toLowerCase() },
+    });
     if (exists) throw new ConflictException('Email already registered');
 
     const tenant = await this.tenants.findOne({ where: { id: tenantId } });
@@ -59,9 +61,15 @@ export class UsersService {
     return this.users.find({
       where: { tenantId },
       select: {
-        id: true, email: true, fullName: true, phone: true,
-        clearance: true, status: true, mfaEnabled: true,
-        lastLoginAt: true, createdAt: true,
+        id: true,
+        email: true,
+        fullName: true,
+        phone: true,
+        clearance: true,
+        status: true,
+        mfaEnabled: true,
+        lastLoginAt: true,
+        createdAt: true,
       },
     });
   }
@@ -70,9 +78,16 @@ export class UsersService {
     const user = await this.users.findOne({
       where: { id, tenantId },
       select: {
-        id: true, email: true, fullName: true, phone: true,
-        clearance: true, status: true, mfaEnabled: true,
-        lastLoginAt: true, createdAt: true, tenantId: true,
+        id: true,
+        email: true,
+        fullName: true,
+        phone: true,
+        clearance: true,
+        status: true,
+        mfaEnabled: true,
+        lastLoginAt: true,
+        createdAt: true,
+        tenantId: true,
       },
     });
     if (!user) throw new NotFoundException('User not found');
@@ -80,7 +95,10 @@ export class UsersService {
   }
 
   async disable(tenantId: string, id: string): Promise<void> {
-    const result = await this.users.update({ id, tenantId }, { status: 'disabled' });
+    const result = await this.users.update(
+      { id, tenantId },
+      { status: 'disabled' },
+    );
     if (!result.affected) throw new NotFoundException('User not found');
   }
 

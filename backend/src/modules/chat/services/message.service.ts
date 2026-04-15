@@ -54,7 +54,10 @@ export class MessageService {
     actor: RequestUser,
     channelId: string,
     query: ListChannelMessagesDto,
-  ): Promise<{ data: MessageWithRelations[]; page: { nextCursor: string | null; limit: number } }> {
+  ): Promise<{
+    data: MessageWithRelations[];
+    page: { nextCursor: string | null; limit: number };
+  }> {
     await this.channelService.ensureMember(actor, channelId);
 
     const limit = Math.min(Math.max(query.limit ?? 50, 1), 100);
@@ -82,14 +85,16 @@ export class MessageService {
     const rows = await qb.getMany();
     const hasMore = rows.length > limit;
     const pageRows = hasMore ? rows.slice(0, limit) : rows;
-    const data = await Promise.all(pageRows.map((message) => this.hydrateMessage(message)));
+    const data = await Promise.all(
+      pageRows.map((message) => this.hydrateMessage(message)),
+    );
 
     await this.markRead(channelId, actor.id);
 
     return {
       data,
       page: {
-        nextCursor: hasMore ? pageRows.at(-1)?.id ?? null : null,
+        nextCursor: hasMore ? (pageRows.at(-1)?.id ?? null) : null,
         limit,
       },
     };
@@ -113,7 +118,11 @@ export class MessageService {
 
     if (dto.fileId) {
       const file = await this.files.findOne({
-        where: { id: dto.fileId, tenantId: actor.tenantId, deletedAt: null as never },
+        where: {
+          id: dto.fileId,
+          tenantId: actor.tenantId,
+          deletedAt: null as never,
+        },
         select: { id: true, scanStatus: true },
       });
       if (!file || file.scanStatus !== 'CLEAN') {
@@ -168,7 +177,9 @@ export class MessageService {
     dto: RedactMessageDto,
   ): Promise<MessageWithRelations> {
     await this.channelService.ensureMember(actor, channelId);
-    const message = await this.messages.findOne({ where: { id: messageId, channelId } });
+    const message = await this.messages.findOne({
+      where: { id: messageId, channelId },
+    });
     if (!message) {
       throw new NotFoundException('Message not found');
     }
@@ -210,7 +221,9 @@ export class MessageService {
     dto: AddReactionDto,
   ): Promise<MessageWithRelations> {
     await this.channelService.ensureMember(actor, channelId);
-    const message = await this.messages.findOne({ where: { id: messageId, channelId } });
+    const message = await this.messages.findOne({
+      where: { id: messageId, channelId },
+    });
     if (!message) {
       throw new NotFoundException('Message not found');
     }
@@ -232,7 +245,11 @@ export class MessageService {
     );
 
     const hydrated = await this.hydrateMessage(message);
-    this.chatGateway.emitReactionChanged(channelId, messageId, hydrated.reactions);
+    this.chatGateway.emitReactionChanged(
+      channelId,
+      messageId,
+      hydrated.reactions,
+    );
     return hydrated;
   }
 
@@ -243,7 +260,9 @@ export class MessageService {
     emoji: string,
   ): Promise<MessageWithRelations> {
     await this.channelService.ensureMember(actor, channelId);
-    const message = await this.messages.findOne({ where: { id: messageId, channelId } });
+    const message = await this.messages.findOne({
+      where: { id: messageId, channelId },
+    });
     if (!message) {
       throw new NotFoundException('Message not found');
     }
@@ -257,11 +276,17 @@ export class MessageService {
 
     await this.reactions.remove(reaction);
     const hydrated = await this.hydrateMessage(message);
-    this.chatGateway.emitReactionChanged(channelId, messageId, hydrated.reactions);
+    this.chatGateway.emitReactionChanged(
+      channelId,
+      messageId,
+      hydrated.reactions,
+    );
     return hydrated;
   }
 
-  private async hydrateMessage(message: Message): Promise<MessageWithRelations> {
+  private async hydrateMessage(
+    message: Message,
+  ): Promise<MessageWithRelations> {
     const hydrated = await this.messages.findOne({
       where: { id: message.id },
       relations: ['sender', 'redactor'],

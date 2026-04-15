@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { DatabaseModule } from '../../shared/database/database.module';
 import { MinioService } from '../file/services/minio.service';
 import { Role } from '../iam/entities/role.entity';
 import { UserRole } from '../iam/entities/user-role.entity';
@@ -17,6 +18,7 @@ import { PdfRenderService } from './services/pdf-render.service';
 @Module({
   imports: [
     ConfigModule,
+    DatabaseModule,
     TypeOrmModule.forFeature([
       DocumentEntity,
       DocumentVersion,

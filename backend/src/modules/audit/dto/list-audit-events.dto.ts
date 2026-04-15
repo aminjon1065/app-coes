@@ -42,7 +42,9 @@ export class ListAuditEventsDto {
   @IsDateString()
   to?: string;
 
-  @ApiPropertyOptional({ example: '2026-04-14T10:30:00.000Z|11111111-1111-1111-1111-111111111111' })
+  @ApiPropertyOptional({
+    example: '2026-04-14T10:30:00.000Z|11111111-1111-1111-1111-111111111111',
+  })
   @IsOptional()
   @IsString()
   cursor?: string;

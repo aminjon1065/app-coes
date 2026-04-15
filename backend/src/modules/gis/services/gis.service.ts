@@ -51,14 +51,20 @@ export class GisService {
   }
 
   private get participants(): Repository<IncidentParticipant> {
-    return this.databaseContext.getRepository(this.dataSource, IncidentParticipant);
+    return this.databaseContext.getRepository(
+      this.dataSource,
+      IncidentParticipant,
+    );
   }
 
   private get tasks(): Repository<Task> {
     return this.databaseContext.getRepository(this.dataSource, Task);
   }
 
-  async listLayers(actor: RequestUser, query: ListLayersDto): Promise<MapLayer[]> {
+  async listLayers(
+    actor: RequestUser,
+    query: ListLayersDto,
+  ): Promise<MapLayer[]> {
     const qb = this.layers
       .createQueryBuilder('layer')
       .leftJoinAndSelect('layer.incident', 'incident')
@@ -70,7 +76,9 @@ export class GisService {
       qb.andWhere('layer.kind = :kind', { kind: query.kind });
     }
     if (query.incidentId) {
-      qb.andWhere('layer.incident_id = :incidentId', { incidentId: query.incidentId });
+      qb.andWhere('layer.incident_id = :incidentId', {
+        incidentId: query.incidentId,
+      });
     }
     if (query.publicOnly === 'true') {
       qb.andWhere('layer.is_public = true');
@@ -86,7 +94,10 @@ export class GisService {
     return visible;
   }
 
-  async createLayer(actor: RequestUser, dto: CreateLayerDto): Promise<MapLayer> {
+  async createLayer(
+    actor: RequestUser,
+    dto: CreateLayerDto,
+  ): Promise<MapLayer> {
     await this.assertIncidentAccess(actor, dto.incidentId ?? null, true);
 
     const layer = this.layers.create({
@@ -123,7 +134,11 @@ export class GisService {
     return layer;
   }
 
-  async updateLayer(actor: RequestUser, id: string, dto: UpdateLayerDto): Promise<MapLayer> {
+  async updateLayer(
+    actor: RequestUser,
+    id: string,
+    dto: UpdateLayerDto,
+  ): Promise<MapLayer> {
     const layer = await this.findLayer(actor, id);
     this.assertLayerManage(actor, layer);
 
@@ -136,7 +151,10 @@ export class GisService {
     if (Object.prototype.hasOwnProperty.call(dto, 'style') && dto.style) {
       layer.style = dto.style;
     }
-    if (Object.prototype.hasOwnProperty.call(dto, 'isPublic') && dto.isPublic !== undefined) {
+    if (
+      Object.prototype.hasOwnProperty.call(dto, 'isPublic') &&
+      dto.isPublic !== undefined
+    ) {
       layer.isPublic = dto.isPublic;
     }
 
@@ -165,7 +183,10 @@ export class GisService {
     }
   }
 
-  async getLayerFeatures(actor: RequestUser, layerId: string): Promise<GeoJsonFeatureCollection> {
+  async getLayerFeatures(
+    actor: RequestUser,
+    layerId: string,
+  ): Promise<GeoJsonFeatureCollection> {
     const layer = await this.findLayer(actor, layerId);
     return this.loadFeatureCollection({
       clause: 'f.layer_id = $1',
@@ -181,7 +202,11 @@ export class GisService {
   ): Promise<{ id: string }> {
     const layer = await this.findLayer(actor, layerId);
     this.assertLayerManage(actor, layer);
-    await this.assertLinkedObjects(actor.tenantId, dto.linkedIncidentId, dto.linkedTaskId);
+    await this.assertLinkedObjects(
+      actor.tenantId,
+      dto.linkedIncidentId,
+      dto.linkedTaskId,
+    );
 
     const rows = await this.dataSource.query(
       `
@@ -239,7 +264,11 @@ export class GisService {
     const layer = await this.findLayer(actor, layerId);
     this.assertLayerManage(actor, layer);
     await this.findFeatureRow(actor, layerId, featureId);
-    await this.assertLinkedObjects(actor.tenantId, dto.linkedIncidentId, dto.linkedTaskId);
+    await this.assertLinkedObjects(
+      actor.tenantId,
+      dto.linkedIncidentId,
+      dto.linkedTaskId,
+    );
 
     await this.dataSource.query(
       `
@@ -278,7 +307,11 @@ export class GisService {
     return { id: featureId };
   }
 
-  async deleteFeature(actor: RequestUser, layerId: string, featureId: string): Promise<void> {
+  async deleteFeature(
+    actor: RequestUser,
+    layerId: string,
+    featureId: string,
+  ): Promise<void> {
     const layer = await this.findLayer(actor, layerId);
     this.assertLayerManage(actor, layer);
     await this.findFeatureRow(actor, layerId, featureId);
@@ -352,7 +385,14 @@ export class GisService {
           ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography
         ) ASC
       `,
-      [actor.tenantId, query.lng, query.lat, query.radius, actor.clearance, actor.id],
+      [
+        actor.tenantId,
+        query.lng,
+        query.lat,
+        query.radius,
+        actor.clearance,
+        actor.id,
+      ],
     );
 
     return {
@@ -421,7 +461,11 @@ export class GisService {
     };
   }
 
-  private async findFeatureRow(actor: RequestUser, layerId: string, featureId: string) {
+  private async findFeatureRow(
+    actor: RequestUser,
+    layerId: string,
+    featureId: string,
+  ) {
     const rows = await this.dataSource.query(
       `
         SELECT id
@@ -439,7 +483,10 @@ export class GisService {
     return rows[0];
   }
 
-  private async canViewLayer(actor: RequestUser, layer: MapLayer): Promise<boolean> {
+  private async canViewLayer(
+    actor: RequestUser,
+    layer: MapLayer,
+  ): Promise<boolean> {
     if (layer.isPublic) {
       return true;
     }
@@ -465,10 +512,19 @@ export class GisService {
     }
   }
 
-  private async hasIncidentAccess(actor: RequestUser, incidentId: string): Promise<boolean> {
+  private async hasIncidentAccess(
+    actor: RequestUser,
+    incidentId: string,
+  ): Promise<boolean> {
     const incident = await this.incidents.findOne({
       where: { id: incidentId, tenantId: actor.tenantId },
-      select: { id: true, classification: true, status: true, createdBy: true, commanderId: true },
+      select: {
+        id: true,
+        classification: true,
+        status: true,
+        createdBy: true,
+        commanderId: true,
+      },
     });
     if (!incident || incident.classification > actor.clearance) {
       return false;
@@ -492,7 +548,10 @@ export class GisService {
     return Boolean(participant);
   }
 
-  private async hasIncidentManageAccess(actor: RequestUser, incidentId: string): Promise<boolean> {
+  private async hasIncidentManageAccess(
+    actor: RequestUser,
+    incidentId: string,
+  ): Promise<boolean> {
     const incident = await this.incidents.findOne({
       where: { id: incidentId, tenantId: actor.tenantId },
       select: { commanderId: true, createdBy: true, classification: true },

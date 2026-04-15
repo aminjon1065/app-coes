@@ -27,8 +27,8 @@ describe('UsersService tenant access', () => {
     tenants = {
       findOne: jest.fn(),
     };
-    databaseContext.getRepository!
-      .mockReturnValueOnce(users as Repository<User>)
+    databaseContext
+      .getRepository!.mockReturnValueOnce(users as Repository<User>)
       .mockReturnValueOnce(tenants as Repository<Tenant>);
 
     service = new UsersService(

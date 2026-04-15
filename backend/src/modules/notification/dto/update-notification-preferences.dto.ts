@@ -25,5 +25,8 @@ export class UpdateNotificationPreferencesDto {
   @ApiPropertyOptional({ type: 'object', additionalProperties: true })
   @IsOptional()
   @IsObject()
-  eventOverrides?: Record<string, { email?: boolean; push?: boolean; inApp?: boolean }>;
+  eventOverrides?: Record<
+    string,
+    { email?: boolean; push?: boolean; inApp?: boolean }
+  >;
 }

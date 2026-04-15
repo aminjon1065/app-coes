@@ -138,7 +138,10 @@ export class AnalyticsService {
     );
   }
 
-  async exportCsv(actor: RequestUser, query: AnalyticsExportDto): Promise<string> {
+  async exportCsv(
+    actor: RequestUser,
+    query: AnalyticsExportDto,
+  ): Promise<string> {
     const { tenantId, from, to } = this.scope(actor, query);
     const type = query.type ?? 'incidents';
     const rows =
@@ -167,7 +170,12 @@ export class AnalyticsService {
     }
 
     const header = Object.keys(rows[0]);
-    return [header, ...rows.map((row: Record<string, unknown>) => header.map((key) => row[key]))]
+    return [
+      header,
+      ...rows.map((row: Record<string, unknown>) =>
+        header.map((key) => row[key]),
+      ),
+    ]
       .map((row) => row.map((value) => this.csvEscape(value)).join(','))
       .join('\n');
   }
@@ -178,7 +186,9 @@ export class AnalyticsService {
         ? query.tenantId
         : actor.tenantId;
     const now = new Date();
-    const from = query.from ?? new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const from =
+      query.from ??
+      new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
     const to = query.to ?? now.toISOString();
     return { tenantId, from, to };
   }

@@ -52,7 +52,10 @@ export class DocumentService {
   }
 
   private get approvals(): Repository<DocumentApproval> {
-    return this.databaseContext.getRepository(this.dataSource, DocumentApproval);
+    return this.databaseContext.getRepository(
+      this.dataSource,
+      DocumentApproval,
+    );
   }
 
   private get incidents(): Repository<Incident> {
@@ -60,7 +63,10 @@ export class DocumentService {
   }
 
   private get participants(): Repository<IncidentParticipant> {
-    return this.databaseContext.getRepository(this.dataSource, IncidentParticipant);
+    return this.databaseContext.getRepository(
+      this.dataSource,
+      IncidentParticipant,
+    );
   }
 
   private get users(): Repository<User> {
@@ -71,8 +77,15 @@ export class DocumentService {
     return this.databaseContext.getRepository(this.dataSource, UserRole);
   }
 
-  async create(actor: RequestUser, dto: CreateDocumentDto): Promise<DocumentDetail> {
-    const incident = await this.loadIncident(actor, dto.incidentId ?? null, true);
+  async create(
+    actor: RequestUser,
+    dto: CreateDocumentDto,
+  ): Promise<DocumentDetail> {
+    const incident = await this.loadIncident(
+      actor,
+      dto.incidentId ?? null,
+      true,
+    );
     const classification = dto.classification ?? incident?.classification ?? 1;
 
     const document = await this.documents.save(
@@ -100,7 +113,11 @@ export class DocumentService {
       templateCode: document.templateCode,
     });
 
-    const version = await this.renderAndStoreVersion(document, actor.id, dto.templateVars ?? {});
+    const version = await this.renderAndStoreVersion(
+      document,
+      actor.id,
+      dto.templateVars ?? {},
+    );
     document.currentVersionId = version.id;
     await this.documents.save(document);
 
@@ -123,13 +140,18 @@ export class DocumentService {
     return this.findOne(actor, document.id);
   }
 
-  async list(actor: RequestUser, query: ListDocumentsDto): Promise<DocumentEntity[]> {
+  async list(
+    actor: RequestUser,
+    query: ListDocumentsDto,
+  ): Promise<DocumentEntity[]> {
     const qb = this.baseVisibleQuery(actor);
     if (query.state) {
       qb.andWhere('document.lifecycle_state = :state', { state: query.state });
     }
     if (query.incidentId) {
-      qb.andWhere('document.incident_id = :incidentId', { incidentId: query.incidentId });
+      qb.andWhere('document.incident_id = :incidentId', {
+        incidentId: query.incidentId,
+      });
     }
     if (query.templateCode) {
       qb.andWhere('document.template_code = :templateCode', {
@@ -157,7 +179,10 @@ export class DocumentService {
     return Object.assign(document, { versions, approvals });
   }
 
-  async listVersions(actor: RequestUser, id: string): Promise<DocumentVersion[]> {
+  async listVersions(
+    actor: RequestUser,
+    id: string,
+  ): Promise<DocumentVersion[]> {
     await this.findOne(actor, id);
     return this.versions.find({
       where: { documentId: id },
@@ -165,7 +190,11 @@ export class DocumentService {
     });
   }
 
-  async getVersionUrl(actor: RequestUser, documentId: string, versionId: string): Promise<string> {
+  async getVersionUrl(
+    actor: RequestUser,
+    documentId: string,
+    versionId: string,
+  ): Promise<string> {
     await this.findOne(actor, documentId);
     const version = await this.versions.findOne({
       where: { id: versionId, documentId },
@@ -173,10 +202,17 @@ export class DocumentService {
     if (!version) {
       throw new NotFoundException('Document version not found');
     }
-    return this.minio.presignedGetUrl(version.storageBucket, version.storageKey, 3600);
+    return this.minio.presignedGetUrl(
+      version.storageBucket,
+      version.storageKey,
+      3600,
+    );
   }
 
-  async submitReview(actor: RequestUser, documentId: string): Promise<DocumentDetail> {
+  async submitReview(
+    actor: RequestUser,
+    documentId: string,
+  ): Promise<DocumentDetail> {
     const document = await this.loadForMutation(actor, documentId);
     if (document.lifecycleState !== 'DRAFT') {
       throw new ConflictException('DOCUMENT_INVALID_STATE');
@@ -200,7 +236,11 @@ export class DocumentService {
     return this.findOne(actor, documentId);
   }
 
-  async approve(actor: RequestUser, documentId: string, comment?: string): Promise<DocumentDetail> {
+  async approve(
+    actor: RequestUser,
+    documentId: string,
+    comment?: string,
+  ): Promise<DocumentDetail> {
     const document = await this.loadForMutation(actor, documentId);
     if (document.lifecycleState !== 'REVIEW') {
       throw new ConflictException('DOCUMENT_INVALID_STATE');
@@ -240,7 +280,11 @@ export class DocumentService {
     return this.findOne(actor, documentId);
   }
 
-  async reject(actor: RequestUser, documentId: string, comment?: string): Promise<DocumentDetail> {
+  async reject(
+    actor: RequestUser,
+    documentId: string,
+    comment?: string,
+  ): Promise<DocumentDetail> {
     const document = await this.loadForMutation(actor, documentId);
     if (document.lifecycleState !== 'REVIEW') {
       throw new ConflictException('DOCUMENT_INVALID_STATE');
@@ -274,7 +318,10 @@ export class DocumentService {
     return this.findOne(actor, documentId);
   }
 
-  async publish(actor: RequestUser, documentId: string): Promise<DocumentDetail> {
+  async publish(
+    actor: RequestUser,
+    documentId: string,
+  ): Promise<DocumentDetail> {
     const document = await this.loadForMutation(actor, documentId);
     if (document.lifecycleState !== 'APPROVED') {
       throw new ConflictException('DOCUMENT_INVALID_STATE');
@@ -306,9 +353,17 @@ export class DocumentService {
     return this.findOne(actor, documentId);
   }
 
-  async revoke(actor: RequestUser, documentId: string, comment?: string): Promise<DocumentDetail> {
+  async revoke(
+    actor: RequestUser,
+    documentId: string,
+    comment?: string,
+  ): Promise<DocumentDetail> {
     const document = await this.loadForMutation(actor, documentId);
-    if (!['PUBLISHED', 'APPROVED', 'REVIEW', 'DRAFT'].includes(document.lifecycleState)) {
+    if (
+      !['PUBLISHED', 'APPROVED', 'REVIEW', 'DRAFT'].includes(
+        document.lifecycleState,
+      )
+    ) {
       throw new ConflictException('DOCUMENT_INVALID_STATE');
     }
     if (!this.canPublish(actor, document)) {
@@ -345,7 +400,10 @@ export class DocumentService {
     return this.findOne(actor, documentId);
   }
 
-  private async loadForMutation(actor: RequestUser, id: string): Promise<DocumentEntity> {
+  private async loadForMutation(
+    actor: RequestUser,
+    id: string,
+  ): Promise<DocumentEntity> {
     const document = await this.findOne(actor, id);
     return document;
   }
@@ -357,7 +415,9 @@ export class DocumentService {
       .leftJoinAndSelect('document.incident', 'incident')
       .leftJoinAndSelect('document.creator', 'creator')
       .where('document.tenant_id = :tenantId', { tenantId: actor.tenantId })
-      .andWhere('document.classification <= :clearance', { clearance: actor.clearance });
+      .andWhere('document.classification <= :clearance', {
+        clearance: actor.clearance,
+      });
   }
 
   private async renderAndStoreVersion(
@@ -373,12 +433,14 @@ export class DocumentService {
       generatedAt: new Date().toISOString(),
       ...templateVars,
     };
-    const templateCode = variant === 'revocation' ? 'post-incident-report' : document.templateCode;
+    const templateCode =
+      variant === 'revocation' ? 'post-incident-report' : document.templateCode;
     const pdf = await this.renderer.renderFromTemplate(templateCode, content);
     const checksum = createHash('sha256').update(pdf).digest('hex');
     const bucket = this.getBucket();
     const versionNumber =
-      ((await this.versions.count({ where: { documentId: document.id } })) || 0) + 1;
+      ((await this.versions.count({ where: { documentId: document.id } })) ||
+        0) + 1;
     const key = `${document.tenantId}/documents/${document.id}/v${versionNumber}-${randomUUID()}.pdf`;
 
     await this.minio.putObject(bucket, key, pdf, pdf.length, 'application/pdf');
@@ -421,7 +483,10 @@ export class DocumentService {
     return incident;
   }
 
-  private canManageIncident(actor: RequestUser, incident: Pick<Incident, 'commanderId' | 'createdBy'>) {
+  private canManageIncident(
+    actor: RequestUser,
+    incident: Pick<Incident, 'commanderId' | 'createdBy'>,
+  ) {
     return (
       incident.commanderId === actor.id ||
       incident.createdBy === actor.id ||
@@ -463,7 +528,10 @@ export class DocumentService {
     return null;
   }
 
-  private async ensureApprovalRecords(document: DocumentEntity, actor: RequestUser): Promise<void> {
+  private async ensureApprovalRecords(
+    document: DocumentEntity,
+    actor: RequestUser,
+  ): Promise<void> {
     const approverIds = await this.resolveApproverIds(document, actor);
     for (const approverId of approverIds) {
       const existing = await this.approvals.findOne({
@@ -488,7 +556,10 @@ export class DocumentService {
     }
   }
 
-  private async resolveApproverIds(document: DocumentEntity, actor: RequestUser): Promise<string[]> {
+  private async resolveApproverIds(
+    document: DocumentEntity,
+    actor: RequestUser,
+  ): Promise<string[]> {
     const approverIds = new Set<string>();
     if (document.incidentId) {
       const incident = await this.incidents.findOne({
@@ -513,7 +584,10 @@ export class DocumentService {
     return [...approverIds];
   }
 
-  private async findOrCreateApproval(document: DocumentEntity, approverId: string) {
+  private async findOrCreateApproval(
+    document: DocumentEntity,
+    approverId: string,
+  ) {
     let approval = await this.approvals.findOne({
       where: {
         documentId: document.id,
@@ -540,6 +614,9 @@ export class DocumentService {
   }
 
   private getBucket() {
-    return this.config.get<string>('MINIO_DOCUMENTS_BUCKET', 'coescd-dev-documents');
+    return this.config.get<string>(
+      'MINIO_DOCUMENTS_BUCKET',
+      'coescd-dev-documents',
+    );
   }
 }

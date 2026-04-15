@@ -7,22 +7,61 @@ import {
   OnApplicationShutdown,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { connect, NatsConnection, JetStreamClient, JetStreamManager, RetentionPolicy, StorageType } from 'nats';
+import {
+  connect,
+  NatsConnection,
+  JetStreamClient,
+  JetStreamManager,
+  RetentionPolicy,
+  StorageType,
+} from 'nats';
 
 export const NATS_CONNECTION = 'NATS_CONNECTION';
 export const NATS_JETSTREAM = 'NATS_JETSTREAM';
 
 // Stream definitions — match NATS_STREAM_* env vars
 const STREAM_CONFIGS = [
-  { name: 'STREAM_IAM',          subjects: ['iam.>'],          description: 'IAM events' },
-  { name: 'STREAM_INCIDENT',     subjects: ['incident.>'],     description: 'Incident domain events' },
-  { name: 'STREAM_TASK',         subjects: ['task.>'],         description: 'Task domain events' },
-  { name: 'STREAM_CHAT',         subjects: ['chat.>'],         description: 'Chat & call events' },
-  { name: 'STREAM_FILE',         subjects: ['file.>'],         description: 'File lifecycle events' },
-  { name: 'STREAM_GEO',          subjects: ['geo.>'],          description: 'GIS feature events' },
-  { name: 'STREAM_NOTIFICATION', subjects: ['notification.>'], description: 'Notification dispatch events' },
-  { name: 'STREAM_ANALYTICS',    subjects: ['analytics.>'],    description: 'Analytics ETL events' },
-  { name: 'STREAM_AUDIT',        subjects: ['audit.>'],        description: 'Audit trail events' },
+  { name: 'STREAM_IAM', subjects: ['iam.>'], description: 'IAM events' },
+  {
+    name: 'STREAM_INCIDENT',
+    subjects: ['incident.>'],
+    description: 'Incident domain events',
+  },
+  {
+    name: 'STREAM_TASK',
+    subjects: ['task.>'],
+    description: 'Task domain events',
+  },
+  {
+    name: 'STREAM_CHAT',
+    subjects: ['chat.>'],
+    description: 'Chat & call events',
+  },
+  {
+    name: 'STREAM_FILE',
+    subjects: ['file.>'],
+    description: 'File lifecycle events',
+  },
+  {
+    name: 'STREAM_GEO',
+    subjects: ['geo.>'],
+    description: 'GIS feature events',
+  },
+  {
+    name: 'STREAM_NOTIFICATION',
+    subjects: ['notification.>'],
+    description: 'Notification dispatch events',
+  },
+  {
+    name: 'STREAM_ANALYTICS',
+    subjects: ['analytics.>'],
+    description: 'Analytics ETL events',
+  },
+  {
+    name: 'STREAM_AUDIT',
+    subjects: ['audit.>'],
+    description: 'Audit trail events',
+  },
 ] as const;
 
 @Global()
@@ -56,13 +95,13 @@ const STREAM_CONFIGS = [
   ],
   exports: [NATS_CONNECTION, NATS_JETSTREAM],
 })
-export class NatsModule implements OnApplicationBootstrap, OnApplicationShutdown {
+export class NatsModule
+  implements OnApplicationBootstrap, OnApplicationShutdown
+{
   private readonly logger = new Logger(NatsModule.name);
 
   // Use `any` to avoid TS1272 (isolatedModules + emitDecoratorMetadata)
-  constructor(
-    @Inject(NATS_CONNECTION) private readonly nc: any,
-  ) {}
+  constructor(@Inject(NATS_CONNECTION) private readonly nc: any) {}
 
   async onApplicationBootstrap() {
     try {
@@ -86,7 +125,10 @@ export class NatsModule implements OnApplicationBootstrap, OnApplicationShutdown
         }
       }
     } catch (err) {
-      this.logger.warn({ err }, 'NATS JetStream stream setup failed — running degraded');
+      this.logger.warn(
+        { err },
+        'NATS JetStream stream setup failed — running degraded',
+      );
     }
   }
 

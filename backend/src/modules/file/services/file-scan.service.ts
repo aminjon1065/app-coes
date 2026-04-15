@@ -38,7 +38,10 @@ export class FileScanService {
         const chunkSize = 64 * 1024;
 
         while (offset < buffer.length) {
-          const chunk = buffer.subarray(offset, Math.min(offset + chunkSize, buffer.length));
+          const chunk = buffer.subarray(
+            offset,
+            Math.min(offset + chunkSize, buffer.length),
+          );
           const sizePrefix = Buffer.alloc(4);
           sizePrefix.writeUInt32BE(chunk.length, 0);
           socket.write(sizePrefix);

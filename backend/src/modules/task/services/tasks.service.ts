@@ -103,7 +103,10 @@ export class TasksService {
   }
 
   async create(actor: RequestUser, dto: CreateTaskDto): Promise<TaskDetail> {
-    const parentTask = await this.ensureParentTask(actor.tenantId, dto.parentTaskId);
+    const parentTask = await this.ensureParentTask(
+      actor.tenantId,
+      dto.parentTaskId,
+    );
     const incidentId = parentTask?.incidentId ?? dto.incidentId ?? null;
 
     if (
@@ -182,7 +185,8 @@ export class TasksService {
     taskId: string,
     dto: UpdateTaskDto,
   ): Promise<TaskDetail> {
-    const manager = this.databaseContext.getManager() ?? this.dataSource.manager;
+    const manager =
+      this.databaseContext.getManager() ?? this.dataSource.manager;
     const task = await this.findVisibleTask(actor, taskId, {
       repository: manager.getRepository(Task),
       forUpdate: true,
@@ -235,7 +239,9 @@ export class TasksService {
     }
 
     if (Object.prototype.hasOwnProperty.call(dto, 'slaBreachAt')) {
-      const nextSlaBreachAt = dto.slaBreachAt ? new Date(dto.slaBreachAt) : null;
+      const nextSlaBreachAt = dto.slaBreachAt
+        ? new Date(dto.slaBreachAt)
+        : null;
       if (!this.sameDate(task.slaBreachAt, nextSlaBreachAt)) {
         changes.slaBreachAt = {
           before: task.slaBreachAt?.toISOString() ?? null,
@@ -276,7 +282,8 @@ export class TasksService {
     taskId: string,
     dto: UpdateTaskPositionDto,
   ): Promise<TaskDetail> {
-    const manager = this.databaseContext.getManager() ?? this.dataSource.manager;
+    const manager =
+      this.databaseContext.getManager() ?? this.dataSource.manager;
     const taskRepository = manager.getRepository(Task);
     const task = await this.findVisibleTask(actor, taskId, {
       repository: taskRepository,
@@ -497,7 +504,8 @@ export class TasksService {
     taskId: string,
     dto: AssignTaskDto,
   ): Promise<TaskDetail> {
-    const manager = this.databaseContext.getManager() ?? this.dataSource.manager;
+    const manager =
+      this.databaseContext.getManager() ?? this.dataSource.manager;
     const task = await this.findVisibleTask(actor, taskId, {
       repository: manager.getRepository(Task),
       forUpdate: true,
@@ -508,7 +516,11 @@ export class TasksService {
       throw new ForbiddenException('TASK_ASSIGN_FORBIDDEN');
     }
 
-    await this.ensureAssignableUser(actor.tenantId, dto.assigneeId, task.incident);
+    await this.ensureAssignableUser(
+      actor.tenantId,
+      dto.assigneeId,
+      task.incident,
+    );
 
     const previousAssigneeId = task.assigneeId;
     if (previousAssigneeId === dto.assigneeId) {
@@ -550,7 +562,8 @@ export class TasksService {
     taskId: string,
     dto: TransitionTaskStatusDto,
   ): Promise<TaskDetail> {
-    const manager = this.databaseContext.getManager() ?? this.dataSource.manager;
+    const manager =
+      this.databaseContext.getManager() ?? this.dataSource.manager;
     const task = await this.findVisibleTask(actor, taskId, {
       repository: manager.getRepository(Task),
       forUpdate: true,
@@ -1052,7 +1065,10 @@ export class TasksService {
         qb.orderBy('task.priority', 'ASC').addOrderBy('task.createdAt', 'DESC');
         return;
       case 'priority_desc':
-        qb.orderBy('task.priority', 'DESC').addOrderBy('task.createdAt', 'DESC');
+        qb.orderBy('task.priority', 'DESC').addOrderBy(
+          'task.createdAt',
+          'DESC',
+        );
         return;
       case 'due_at_asc':
         qb.orderBy('task.dueAt', 'ASC', 'NULLS LAST').addOrderBy(
@@ -1067,8 +1083,7 @@ export class TasksService {
         );
         return;
       case 'position_asc':
-        qb
-          .orderBy('task.status', 'ASC')
+        qb.orderBy('task.status', 'ASC')
           .addOrderBy('task.position', 'ASC')
           .addOrderBy('task.createdAt', 'ASC');
         return;

@@ -1,6 +1,6 @@
 # Prometheus scrape configuration for local CoESCD development.
-# All app services expose prom-client metrics at /metrics.
-# host.docker.internal resolves to the Docker host machine (Mac + Linux via extra_hosts).
+# App services run on the host via `pnpm run dev`.
+# Infrastructure services and exporters run inside Docker.
 
 global:
   scrape_interval: 15s
@@ -9,7 +9,6 @@ global:
     env: development
 
 scrape_configs:
-  # ── Application services (run via pnpm run dev on the host) ─────────────────
   - job_name: coescd-api
     static_configs:
       - targets: ["host.docker.internal:3001"]
@@ -30,16 +29,18 @@ scrape_configs:
       - targets: ["host.docker.internal:3003"]
     metrics_path: /metrics
 
-  # ── Infrastructure services (inside Docker network) ──────────────────────────
   - job_name: nats
     static_configs:
       - targets: ["nats:8222"]
     metrics_path: /metrics
 
-  - job_name: redis
-    # redis-exporter not in stack — placeholder for when added
+  - job_name: postgres_exporter
     static_configs:
-      - targets: []
+      - targets: ["postgres-exporter:9187"]
+
+  - job_name: redis_exporter
+    static_configs:
+      - targets: ["redis-exporter:9121"]
 
   - job_name: prometheus
     static_configs:

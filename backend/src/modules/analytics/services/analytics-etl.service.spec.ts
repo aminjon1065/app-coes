@@ -22,7 +22,9 @@ describe('AnalyticsEtlService', () => {
 
     await service.materializeIncident('incident-1');
 
-    expect(dataSource.query.mock.calls[0][0]).toContain('ON CONFLICT (incident_id)');
+    expect(dataSource.query.mock.calls[0][0]).toContain(
+      'ON CONFLICT (incident_id)',
+    );
     expect(dataSource.query.mock.calls[0][1]).toEqual(['incident-1']);
   });
 
@@ -31,7 +33,9 @@ describe('AnalyticsEtlService', () => {
 
     await service.materializeTask('task-1');
 
-    expect(dataSource.query.mock.calls[0][0]).toContain('ON CONFLICT (task_id)');
+    expect(dataSource.query.mock.calls[0][0]).toContain(
+      'ON CONFLICT (task_id)',
+    );
     expect(dataSource.query.mock.calls[0][1]).toEqual(['task-1']);
   });
 });

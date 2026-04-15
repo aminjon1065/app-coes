@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { DataSource, In, IsNull, Repository } from 'typeorm';
 import { RequestUser } from '../../../shared/auth/current-user.decorator';
@@ -107,7 +104,7 @@ export class NotificationService {
     return {
       data,
       page: {
-        nextCursor: hasMore ? data.at(-1)?.id ?? null : null,
+        nextCursor: hasMore ? (data.at(-1)?.id ?? null) : null,
         limit,
         hasMore,
       },
@@ -163,7 +160,10 @@ export class NotificationService {
     if (Object.prototype.hasOwnProperty.call(dto, 'inAppEnabled')) {
       preference.inAppEnabled = dto.inAppEnabled ?? preference.inAppEnabled;
     }
-    if (Object.prototype.hasOwnProperty.call(dto, 'eventOverrides') && dto.eventOverrides) {
+    if (
+      Object.prototype.hasOwnProperty.call(dto, 'eventOverrides') &&
+      dto.eventOverrides
+    ) {
       preference.eventOverrides = dto.eventOverrides;
     }
 
@@ -194,11 +194,14 @@ export class NotificationService {
         continue;
       }
 
-      const eventId =
-        String(input.metadata?.eventId ?? this.buildEventId(input, recipientId));
+      const eventId = String(
+        input.metadata?.eventId ?? this.buildEventId(input, recipientId),
+      );
       const duplicate = await this.notifications
         .createQueryBuilder('notification')
-        .where('notification.tenant_id = :tenantId', { tenantId: input.tenantId })
+        .where('notification.tenant_id = :tenantId', {
+          tenantId: input.tenantId,
+        })
         .andWhere('notification.user_id = :userId', { userId: recipientId })
         .andWhere('notification.event_type = :eventType', {
           eventType: input.eventType,
@@ -209,14 +212,21 @@ export class NotificationService {
         continue;
       }
 
-      const preference = await this.ensurePreferences(recipientId, input.tenantId);
+      const preference = await this.ensurePreferences(
+        recipientId,
+        input.tenantId,
+      );
       if (!critical && preference.isDisabled) {
         continue;
       }
 
       const overrides = preference.eventOverrides[input.eventType] ?? {};
-      const inAppEnabled = critical ? true : overrides.inApp ?? preference.inAppEnabled;
-      const emailEnabled = critical ? true : overrides.email ?? preference.emailEnabled;
+      const inAppEnabled = critical
+        ? true
+        : (overrides.inApp ?? preference.inAppEnabled);
+      const emailEnabled = critical
+        ? true
+        : (overrides.email ?? preference.emailEnabled);
 
       const notification = await this.notifications.save(
         this.notifications.create({
@@ -266,11 +276,15 @@ export class NotificationService {
       select: { userId: true },
     });
 
-    return [...new Set([
-      incident.commanderId,
-      incident.createdBy,
-      ...participants.map((item) => item.userId),
-    ])].filter((userId): userId is string => Boolean(userId) && userId !== actorId);
+    return [
+      ...new Set([
+        incident.commanderId,
+        incident.createdBy,
+        ...participants.map((item) => item.userId),
+      ]),
+    ].filter(
+      (userId): userId is string => Boolean(userId) && userId !== actorId,
+    );
   }
 
   async resolveTaskAssignee(

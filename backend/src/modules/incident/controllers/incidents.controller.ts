@@ -46,7 +46,13 @@ export class IncidentsController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new incident draft' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'tenant_admin',
+    'platform_admin',
+  )
   @Permissions('incident.create')
   async create(
     @CurrentUser() actor: RequestUser,
@@ -57,7 +63,15 @@ export class IncidentsController {
 
   @Get()
   @ApiOperation({ summary: 'List incidents visible to the current user' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'agency_liaison',
+    'tenant_admin',
+    'platform_admin',
+  )
   @Permissions('incident.read')
   async findAll(
     @CurrentUser() actor: RequestUser,
@@ -68,7 +82,15 @@ export class IncidentsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get an incident by ID' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'agency_liaison',
+    'tenant_admin',
+    'platform_admin',
+  )
   @Permissions('incident.read')
   async findOne(
     @CurrentUser() actor: RequestUser,
@@ -110,12 +132,22 @@ export class IncidentsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AssignCommanderDto,
   ) {
-    return { data: await this.incidents.assignCommander(actor, id, dto.userId) };
+    return {
+      data: await this.incidents.assignCommander(actor, id, dto.userId),
+    };
   }
 
   @Get(':id/participants')
   @ApiOperation({ summary: 'List active incident participants' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'agency_liaison',
+    'tenant_admin',
+    'platform_admin',
+  )
   @Permissions('incident.read')
   async listParticipants(
     @CurrentUser() actor: RequestUser,
@@ -134,7 +166,12 @@ export class IncidentsController {
     @Body() dto: AddParticipantDto,
   ) {
     return {
-      data: await this.incidents.addParticipant(actor, id, dto.userId, dto.role),
+      data: await this.incidents.addParticipant(
+        actor,
+        id,
+        dto.userId,
+        dto.role,
+      ),
     };
   }
 
@@ -153,7 +190,15 @@ export class IncidentsController {
 
   @Get(':id/sitreps')
   @ApiOperation({ summary: 'List incident situation reports' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'agency_liaison',
+    'tenant_admin',
+    'platform_admin',
+  )
   @Permissions('incident.read')
   async listSitreps(
     @CurrentUser() actor: RequestUser,
@@ -165,7 +210,14 @@ export class IncidentsController {
 
   @Post(':id/sitreps')
   @ApiOperation({ summary: 'Submit incident situation report' })
-  @Roles('field_responder', 'incident_commander', 'shift_lead', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'field_responder',
+    'incident_commander',
+    'shift_lead',
+    'agency_liaison',
+    'tenant_admin',
+    'platform_admin',
+  )
   @Permissions('incident.sitrep.create')
   async submitSitrep(
     @CurrentUser() actor: RequestUser,
@@ -176,8 +228,18 @@ export class IncidentsController {
   }
 
   @Get(':id/transitions/available')
-  @ApiOperation({ summary: 'List transitions currently available to the caller' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'tenant_admin', 'platform_admin')
+  @ApiOperation({
+    summary: 'List transitions currently available to the caller',
+  })
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'agency_liaison',
+    'tenant_admin',
+    'platform_admin',
+  )
   @Permissions('incident.read')
   async availableTransitions(
     @CurrentUser() actor: RequestUser,
@@ -188,7 +250,15 @@ export class IncidentsController {
 
   @Get(':id/timeline')
   @ApiOperation({ summary: 'Get incident timeline entries' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'agency_liaison',
+    'tenant_admin',
+    'platform_admin',
+  )
   @Permissions('incident.read')
   async timeline(
     @CurrentUser() actor: RequestUser,
@@ -203,7 +273,15 @@ export class IncidentsController {
   @Header('Connection', 'keep-alive')
   @Header('X-Accel-Buffering', 'no')
   @ApiOperation({ summary: 'Stream incident activity updates via SSE' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'agency_liaison',
+    'tenant_admin',
+    'platform_admin',
+  )
   @Permissions('incident.read')
   async stream(
     @CurrentUser() actor: RequestUser,

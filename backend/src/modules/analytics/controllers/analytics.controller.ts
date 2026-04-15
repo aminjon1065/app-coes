@@ -28,7 +28,10 @@ export class AnalyticsController {
   @ApiOperation({ summary: 'Analytics KPI summary' })
   @Roles('analyst', 'platform_admin')
   @Permissions('analytics.read')
-  async summary(@CurrentUser() actor: RequestUser, @Query() query: AnalyticsRangeDto) {
+  async summary(
+    @CurrentUser() actor: RequestUser,
+    @Query() query: AnalyticsRangeDto,
+  ) {
     return { data: await this.analytics.summary(actor, query) };
   }
 

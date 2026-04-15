@@ -37,21 +37,29 @@ export class FileService {
   }
 
   private get variants(): Repository<FileVariantEntity> {
-    return this.databaseContext.getRepository(this.dataSource, FileVariantEntity);
+    return this.databaseContext.getRepository(
+      this.dataSource,
+      FileVariantEntity,
+    );
   }
 
   private get users(): Repository<User> {
     return this.databaseContext.getRepository(this.dataSource, User);
   }
 
-  async upload(file: Express.Multer.File, actor: RequestUser): Promise<FileEntity> {
+  async upload(
+    file: Express.Multer.File,
+    actor: RequestUser,
+  ): Promise<FileEntity> {
     if (!file?.buffer?.length) {
       throw new UnprocessableEntityException('FILE_BUFFER_REQUIRED');
     }
 
     await this.ensureUploader(actor);
 
-    const checksumSha256 = createHash('sha256').update(file.buffer).digest('hex');
+    const checksumSha256 = createHash('sha256')
+      .update(file.buffer)
+      .digest('hex');
     const existing = await this.files.findOne({
       where: {
         tenantId: actor.tenantId,
@@ -89,7 +97,13 @@ export class FileService {
     const objectKey = this.buildObjectKey(actor.tenantId, file.originalname);
     const bucket = this.getFilesBucket();
 
-    await this.minio.putObject(bucket, objectKey, file.buffer, file.size, file.mimetype);
+    await this.minio.putObject(
+      bucket,
+      objectKey,
+      file.buffer,
+      file.size,
+      file.mimetype,
+    );
 
     const saved = await this.files.save(
       this.files.create({
@@ -128,7 +142,11 @@ export class FileService {
       throw new UnprocessableEntityException('FILE_NOT_AVAILABLE');
     }
 
-    return this.minio.presignedGetUrl(file.storageBucket, file.storageKey, 3600);
+    return this.minio.presignedGetUrl(
+      file.storageBucket,
+      file.storageKey,
+      3600,
+    );
   }
 
   async softDelete(fileId: string, actor: RequestUser): Promise<void> {
@@ -137,7 +155,12 @@ export class FileService {
     const canDelete =
       file.uploadedBy === actor.id ||
       actor.roles.some((role) =>
-        ['tenant_admin', 'platform_admin', 'shift_lead', 'incident_commander'].includes(role),
+        [
+          'tenant_admin',
+          'platform_admin',
+          'shift_lead',
+          'incident_commander',
+        ].includes(role),
       );
 
     if (!canDelete) {
@@ -147,16 +170,22 @@ export class FileService {
     file.deletedAt = new Date();
     await this.files.save(file);
 
-    await this.minio.removeObject(file.storageBucket, file.storageKey).catch((error: Error) => {
-      this.logger.warn(`Failed to remove object ${file.storageKey}: ${error.message}`);
-    });
+    await this.minio
+      .removeObject(file.storageBucket, file.storageKey)
+      .catch((error: Error) => {
+        this.logger.warn(
+          `Failed to remove object ${file.storageKey}: ${error.message}`,
+        );
+      });
 
     const variants = await this.variants.find({ where: { fileId } });
     for (const variant of variants) {
       await this.minio
         .removeObject(variant.storageBucket, variant.storageKey)
         .catch((error: Error) => {
-          this.logger.warn(`Failed to remove variant ${variant.storageKey}: ${error.message}`);
+          this.logger.warn(
+            `Failed to remove variant ${variant.storageKey}: ${error.message}`,
+          );
         });
     }
 
@@ -178,7 +207,10 @@ export class FileService {
     }
   }
 
-  private async findVisibleFile(fileId: string, tenantId: string): Promise<FileEntity> {
+  private async findVisibleFile(
+    fileId: string,
+    tenantId: string,
+  ): Promise<FileEntity> {
     const file = await this.files.findOne({
       where: {
         id: fileId,
@@ -215,17 +247,31 @@ export class FileService {
     return typeof contentType === 'string' && contentType.startsWith('image/');
   }
 
-  private async createThumbnailVariant(file: FileEntity, buffer: Buffer): Promise<void> {
+  private async createThumbnailVariant(
+    file: FileEntity,
+    buffer: Buffer,
+  ): Promise<void> {
     try {
       const output = await sharp(buffer)
-        .resize({ width: 320, height: 320, fit: 'inside', withoutEnlargement: true })
+        .resize({
+          width: 320,
+          height: 320,
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
         .jpeg({ quality: 82 })
         .toBuffer();
 
       const bucket = this.getMediaBucket();
       const key = `${file.tenantId}/thumbnails/${file.id}.jpg`;
 
-      await this.minio.putObject(bucket, key, output, output.length, 'image/jpeg');
+      await this.minio.putObject(
+        bucket,
+        key,
+        output,
+        output.length,
+        'image/jpeg',
+      );
       await this.variants.save(
         this.variants.create({
           fileId: file.id,

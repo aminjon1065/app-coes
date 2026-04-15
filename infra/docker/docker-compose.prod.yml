@@ -1,0 +1,412 @@
+name: coescd-prod
+
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      POSTGRES_DB: ${POSTGRES_DB:-coescd}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ../../tools/migrations/init.sql:/docker-entrypoint-initdb.d/00_init.sql:ro
+      - ../../tools/migrations/iam/001_initial.sql:/docker-entrypoint-initdb.d/01_iam.sql:ro
+      - ../../tools/migrations/incident/001_initial.sql:/docker-entrypoint-initdb.d/02_incident.sql:ro
+      - ../../tools/migrations/incident/002_gis_fields.sql:/docker-entrypoint-initdb.d/03_incident_gis.sql:ro
+      - ../../tools/migrations/task/001_initial.sql:/docker-entrypoint-initdb.d/04_task.sql:ro
+      - ../../tools/migrations/task/002_operational_slice.sql:/docker-entrypoint-initdb.d/05_task_operational.sql:ro
+      - ../../tools/migrations/file/001_initial.sql:/docker-entrypoint-initdb.d/06_file.sql:ro
+      - ../../tools/migrations/chat/001_initial.sql:/docker-entrypoint-initdb.d/07_chat.sql:ro
+      - ../../tools/migrations/document/001_initial.sql:/docker-entrypoint-initdb.d/08_document.sql:ro
+      - ../../tools/migrations/gis/001_initial.sql:/docker-entrypoint-initdb.d/09_gis.sql:ro
+      - ../../tools/migrations/audit/001_initial.sql:/docker-entrypoint-initdb.d/10_audit.sql:ro
+      - ../../tools/migrations/analytics/001_initial.sql:/docker-entrypoint-initdb.d/11_analytics.sql:ro
+      - ../../tools/migrations/notification/001_initial.sql:/docker-entrypoint-initdb.d/12_notification.sql:ro
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-coescd}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+    shm_size: "256mb"
+    command: >
+      postgres
+      -c shared_preload_libraries=pg_stat_statements
+      -c max_connections=200
+      -c work_mem=16MB
+      -c maintenance_work_mem=256MB
+      -c effective_cache_size=1GB
+      -c log_min_duration_statement=200
+      -c log_timezone=UTC
+      -c timezone=UTC
+
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      DB_NAME: ${POSTGRES_DB:-coescd}
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 1000
+      DEFAULT_POOL_SIZE: 25
+      MIN_POOL_SIZE: 5
+      SERVER_IDLE_TIMEOUT: 600
+      LOG_CONNECTIONS: 0
+      LOG_DISCONNECTIONS: 0
+      LISTEN_PORT: 5432
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -p 5432 -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lfu
+      --requirepass ${REDIS_PASSWORD:-change-me}
+      --loglevel notice
+      --save 60 1
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD:-change-me} ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    volumes:
+      - redis_data:/data
+
+  nats:
+    image: nats:2.10-alpine
+    restart: unless-stopped
+    command:
+      - "-js"
+      - "-m"
+      - "8222"
+      - "--store_dir=/data"
+    expose:
+      - "4222"
+      - "8222"
+    volumes:
+      - nats_data:/data
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8222/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  minio:
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-coescd}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me}
+      MINIO_BROWSER_REDIRECT_URL: ${MINIO_CONSOLE_URL:-https://localhost/minio/}
+    expose:
+      - "9000"
+      - "9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9000/minio/health/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  minio-init:
+    image: minio/mc:latest
+    restart: on-failure
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: |
+      /bin/sh -c "
+        set -e
+        mc alias set coescd http://minio:9000 ${MINIO_ROOT_USER:-coescd} ${MINIO_ROOT_PASSWORD:-change-me}
+        mc mb --ignore-existing coescd/${S3_BUCKET_FILES:-coescd-files}
+        mc mb --ignore-existing coescd/${S3_BUCKET_DOCUMENTS:-coescd-documents}
+        mc mb --ignore-existing coescd/${S3_BUCKET_MEDIA:-coescd-media}
+        mc mb --ignore-existing coescd/${S3_BUCKET_AUDIT:-coescd-audit}
+        mc mb --ignore-existing coescd/${S3_BUCKET_BACKUPS:-coescd-backups}
+        mc mb --ignore-existing coescd/${S3_BUCKET_TEMP:-coescd-temp}
+        echo 'MinIO buckets ready.'
+      "
+
+  clamav:
+    image: clamav/clamav:1.4
+    restart: unless-stopped
+    expose:
+      - "3310"
+    volumes:
+      - clamav_data:/var/lib/clamav
+    environment:
+      CLAMAV_NO_FRESHCLAMD_PROXY: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "clamdscan --no-summary /dev/null"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 180s
+
+  opensearch:
+    image: opensearchproject/opensearch:2.17.1
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "true"
+      OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
+      bootstrap.memory_lock: "true"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    expose:
+      - "9200"
+    volumes:
+      - os_data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s || exit 1"]
+      interval: 10s
+      timeout: 8s
+      retries: 10
+      start_period: 30s
+
+  backend:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+      target: runner
+    restart: unless-stopped
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      clamav:
+        condition: service_started
+      opensearch:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      APP_URL: ${APP_URL:-https://localhost}
+      FRONTEND_URL: ${APP_URL:-https://localhost}
+      APP_PORT_API: 3001
+      CORS_ORIGINS: ${APP_URL:-https://localhost}
+      WS_CORS_ORIGINS: ${APP_URL:-https://localhost}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-localhost}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      COOKIE_SAME_SITE: ${COOKIE_SAME_SITE:-lax}
+      COOKIE_SECRET: ${COOKIE_SECRET:-change-me}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-change-me}@pgbouncer:5432/${POSTGRES_DB:-coescd}
+      DATABASE_SSL: "false"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-change-me}
+      REDIS_TLS: "false"
+      NATS_URL: nats://nats:4222
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-coescd}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-change-me}
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: 3310
+      OPENSEARCH_NODE: http://opensearch:9200
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-change-me}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-me}
+      JWT_ISSUER: ${JWT_ISSUER:-coescd}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-coescd-clients}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@coescd.local}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-Admin123!}
+      SEED_TENANT_CODE: ${SEED_TENANT_CODE:-default}
+      SEED_TENANT_NAME: ${SEED_TENANT_NAME:-Default Tenant}
+      SEED_ADMIN_ROLES: ${SEED_ADMIN_ROLES:-platform_admin,tenant_admin}
+      SEED_ADMIN_ENABLED: ${SEED_ADMIN_ENABLED:-false}
+    expose:
+      - "3001"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/health/live').then((res)=>process.exit(res.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile
+      target: runner
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      APP_URL: ${APP_URL:-https://localhost}
+      NEXT_PUBLIC_APP_URL: ${APP_URL:-https://localhost}
+      COESCD_API_BASE_URL: http://backend:3001/api/v1
+      NEXT_PUBLIC_COESCD_API_BASE_URL: ${APP_URL:-https://localhost}/api/v1
+      COESCD_SOCKET_URL: ${APP_URL:-https://localhost}
+      NEXT_PUBLIC_COESCD_SOCKET_URL: ${APP_URL:-https://localhost}
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then((res)=>process.exit(res.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    profiles: ["observability"]
+    restart: unless-stopped
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+    environment:
+      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-change-me}@pgbouncer:5432/${POSTGRES_DB:-coescd}?sslmode=disable
+    expose:
+      - "9187"
+
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    profiles: ["observability"]
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_ADDR: redis://redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-change-me}
+    expose:
+      - "9121"
+
+  loki:
+    image: grafana/loki:3.1.1
+    profiles: ["observability"]
+    restart: unless-stopped
+    command: -config.file=/etc/loki/config.yml
+    volumes:
+      - ./loki/config.yml:/etc/loki/config.yml:ro
+      - loki_data:/loki
+    expose:
+      - "3100"
+
+  promtail:
+    image: grafana/promtail:3.1.1
+    profiles: ["observability"]
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      loki:
+        condition: service_started
+    volumes:
+      - ./promtail/promtail.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+
+  prometheus:
+    image: prom/prometheus:v2.53.1
+    profiles: ["observability"]
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+      - --web.enable-lifecycle
+    depends_on:
+      backend:
+        condition: service_healthy
+      postgres-exporter:
+        condition: service_started
+      redis-exporter:
+        condition: service_started
+      loki:
+        condition: service_started
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:11.1.5
+    profiles: ["observability"]
+    restart: unless-stopped
+    depends_on:
+      prometheus:
+        condition: service_started
+      loki:
+        condition: service_started
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-change-me}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3500}
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    ports:
+      - "3500:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+
+volumes:
+  pg_data:
+  redis_data:
+  nats_data:
+  minio_data:
+  os_data:
+  clamav_data:
+  prometheus_data:
+  grafana_data:
+  loki_data:

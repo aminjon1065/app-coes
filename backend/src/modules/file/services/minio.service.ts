@@ -10,7 +10,10 @@ export class MinioService implements OnModuleInit {
   constructor(private readonly config: ConfigService) {}
 
   onModuleInit() {
-    const endpointValue = this.config.get<string>('MINIO_ENDPOINT', 'localhost');
+    const endpointValue = this.config.get<string>(
+      'MINIO_ENDPOINT',
+      'localhost',
+    );
     const parsed = this.parseEndpoint(endpointValue);
 
     this.client = new Client({
@@ -33,10 +36,16 @@ export class MinioService implements OnModuleInit {
     size: number,
     contentType: string,
   ): Promise<void> {
-    await this.client.putObject(bucket, key, body, size, { 'Content-Type': contentType });
+    await this.client.putObject(bucket, key, body, size, {
+      'Content-Type': contentType,
+    });
   }
 
-  async presignedGetUrl(bucket: string, key: string, ttlSeconds = 3600): Promise<string> {
+  async presignedGetUrl(
+    bucket: string,
+    key: string,
+    ttlSeconds = 3600,
+  ): Promise<string> {
     return this.client.presignedGetObject(bucket, key, ttlSeconds);
   }
 

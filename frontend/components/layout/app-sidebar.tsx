@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   Map,
   MessageSquareText,
+  ShieldCheck,
   Settings2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/documents", label: "Docs", icon: FileStack },
   { href: "/map", label: "Map", icon: Map },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/settings", label: "Security", icon: ShieldCheck },
   { href: "/admin", label: "Admin", icon: Settings2 },
 ];
 
@@ -106,11 +108,13 @@ export function AppSidebar() {
                       ? "Board, queue, overdue, detail"
                       : item.href === "/dashboard"
                         ? "Priority snapshot"
-                        : item.href === "/chat"
-                          ? "Rooms, messages, typing"
-                          : item.href === "/documents"
-                            ? "Generate, review, publish"
-                            : "Module stub"}
+                    : item.href === "/chat"
+                      ? "Rooms, messages, typing"
+                      : item.href === "/settings"
+                        ? "MFA and profile security"
+                      : item.href === "/documents"
+                        ? "Generate, review, publish"
+                        : "Module stub"}
                   </div>
                 </div>
               </Link>

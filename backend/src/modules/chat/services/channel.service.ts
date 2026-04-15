@@ -81,10 +81,15 @@ export class ChannelService {
       .orderBy('channel.updated_at', 'DESC')
       .getMany();
 
-    return Promise.all(channels.map((channel) => this.enrichChannel(channel, actor.id)));
+    return Promise.all(
+      channels.map((channel) => this.enrichChannel(channel, actor.id)),
+    );
   }
 
-  async create(actor: RequestUser, dto: CreateChannelDto): Promise<ChannelSummary> {
+  async create(
+    actor: RequestUser,
+    dto: CreateChannelDto,
+  ): Promise<ChannelSummary> {
     return this.createInternal({
       tenantId: actor.tenantId,
       type: dto.type,
@@ -98,17 +103,24 @@ export class ChannelService {
   }
 
   async createInternal(input: InternalChannelCreate): Promise<ChannelSummary> {
-    const memberIds = this.normalizeMembers(input.createdBy, input.memberIds ?? []);
+    const memberIds = this.normalizeMembers(
+      input.createdBy,
+      input.memberIds ?? [],
+    );
     const memberUsers = await this.loadUsers(input.tenantId, memberIds);
 
     if (input.type === 'DIRECT' && memberIds.length !== 2) {
-      throw new UnprocessableEntityException('DIRECT_CHANNEL_REQUIRES_TWO_MEMBERS');
+      throw new UnprocessableEntityException(
+        'DIRECT_CHANNEL_REQUIRES_TWO_MEMBERS',
+      );
     }
     if (input.type === 'GROUP' && !input.name?.trim()) {
       throw new UnprocessableEntityException('GROUP_CHANNEL_NAME_REQUIRED');
     }
     if (input.type === 'INCIDENT_ROOM' && !input.incidentId) {
-      throw new UnprocessableEntityException('INCIDENT_CHANNEL_REQUIRES_INCIDENT');
+      throw new UnprocessableEntityException(
+        'INCIDENT_CHANNEL_REQUIRES_INCIDENT',
+      );
     }
     if (input.type === 'INCIDENT_ROOM' && input.incidentId) {
       const existingRoom = await this.channels.findOne({
@@ -167,7 +179,10 @@ export class ChannelService {
     return this.enrichChannel(saved, input.createdBy);
   }
 
-  async findOne(actor: RequestUser, channelId: string): Promise<ChannelSummary> {
+  async findOne(
+    actor: RequestUser,
+    channelId: string,
+  ): Promise<ChannelSummary> {
     const channel = await this.getAccessibleChannel(actor, channelId);
     return this.enrichChannel(channel, actor.id);
   }
@@ -209,7 +224,9 @@ export class ChannelService {
       throw new ForbiddenException('CHANNEL_MEMBER_UPDATE_FORBIDDEN');
     }
     if (channel.type === 'DIRECT') {
-      throw new UnprocessableEntityException('DIRECT_CHANNEL_MEMBERSHIP_LOCKED');
+      throw new UnprocessableEntityException(
+        'DIRECT_CHANNEL_MEMBERSHIP_LOCKED',
+      );
     }
 
     const [user] = await this.loadUsers(actor.tenantId, [dto.userId]);
@@ -242,12 +259,16 @@ export class ChannelService {
       throw new ForbiddenException('CHANNEL_MEMBER_UPDATE_FORBIDDEN');
     }
 
-    const member = await this.channelMembers.findOne({ where: { channelId, userId } });
+    const member = await this.channelMembers.findOne({
+      where: { channelId, userId },
+    });
     if (!member) {
       throw new NotFoundException('Channel member not found');
     }
     if (channel.type === 'DIRECT') {
-      throw new UnprocessableEntityException('DIRECT_CHANNEL_MEMBERSHIP_LOCKED');
+      throw new UnprocessableEntityException(
+        'DIRECT_CHANNEL_MEMBERSHIP_LOCKED',
+      );
     }
 
     await this.channelMembers.remove(member);
@@ -268,11 +289,16 @@ export class ChannelService {
   }
 
   async isMember(channelId: string, userId: string): Promise<boolean> {
-    const member = await this.channelMembers.findOne({ where: { channelId, userId } });
+    const member = await this.channelMembers.findOne({
+      where: { channelId, userId },
+    });
     return Boolean(member);
   }
 
-  async getMembershipChannelIds(userId: string, tenantId: string): Promise<string[]> {
+  async getMembershipChannelIds(
+    userId: string,
+    tenantId: string,
+  ): Promise<string[]> {
     const rows = await this.channelMembers
       .createQueryBuilder('member')
       .innerJoin(Channel, 'channel', 'channel.id = member.channel_id')
@@ -333,7 +359,9 @@ export class ChannelService {
       );
     }
 
-    const toRemove = currentMembers.filter((item) => !desiredSet.has(item.userId));
+    const toRemove = currentMembers.filter(
+      (item) => !desiredSet.has(item.userId),
+    );
     if (toRemove.length) {
       await this.channelMembers.remove(toRemove);
     }
@@ -393,7 +421,10 @@ export class ChannelService {
     });
   }
 
-  private async loadUsers(tenantId: string, userIds: string[]): Promise<User[]> {
+  private async loadUsers(
+    tenantId: string,
+    userIds: string[],
+  ): Promise<User[]> {
     const uniqueIds = [...new Set(userIds)];
     const users = await this.users.find({
       where: { id: In(uniqueIds), tenantId, status: 'active' },
@@ -427,7 +458,11 @@ export class ChannelService {
         select: { userId: true },
       });
       const ids = members.map((item) => item.userId).sort();
-      if (ids.length === 2 && ids[0] === targetIds[0] && ids[1] === targetIds[1]) {
+      if (
+        ids.length === 2 &&
+        ids[0] === targetIds[0] &&
+        ids[1] === targetIds[1]
+      ) {
         return channel;
       }
     }
@@ -447,7 +482,8 @@ export class ChannelService {
     }
     return (
       Boolean(channel.incidentId) &&
-      (actor.roles.includes('shift_lead') || actor.roles.includes('incident_commander'))
+      (actor.roles.includes('shift_lead') ||
+        actor.roles.includes('incident_commander'))
     );
   }
 }

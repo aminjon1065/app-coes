@@ -1,5 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsIn, IsObject, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsIn,
+  IsObject,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+} from 'class-validator';
 import { GIS_LAYER_KINDS } from '../entities/map-layer.entity';
 
 export class CreateLayerDto {
@@ -12,7 +20,9 @@ export class CreateLayerDto {
   @MaxLength(160)
   name: string;
 
-  @ApiPropertyOptional({ example: 'Active field resources in the northern sector.' })
+  @ApiPropertyOptional({
+    example: 'Active field resources in the northern sector.',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(2_000)

@@ -37,7 +37,16 @@ export class GisController {
 
   @Get('layers')
   @ApiOperation({ summary: 'List visible GIS layers' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'gis_analyst', 'tenant_admin', 'platform_admin', 'auditor')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'gis_analyst',
+    'tenant_admin',
+    'platform_admin',
+    'auditor',
+  )
   async listLayers(
     @CurrentUser() actor: RequestUser,
     @Query() query: ListLayersDto,
@@ -47,7 +56,13 @@ export class GisController {
 
   @Post('layers')
   @ApiOperation({ summary: 'Create GIS layer' })
-  @Roles('shift_lead', 'incident_commander', 'gis_analyst', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'shift_lead',
+    'incident_commander',
+    'gis_analyst',
+    'tenant_admin',
+    'platform_admin',
+  )
   @Permissions('gis.layer.create')
   async createLayer(
     @CurrentUser() actor: RequestUser,
@@ -58,7 +73,16 @@ export class GisController {
 
   @Get('layers/:id')
   @ApiOperation({ summary: 'Get GIS layer metadata' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'gis_analyst', 'tenant_admin', 'platform_admin', 'auditor')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'gis_analyst',
+    'tenant_admin',
+    'platform_admin',
+    'auditor',
+  )
   async getLayer(
     @CurrentUser() actor: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -68,7 +92,13 @@ export class GisController {
 
   @Patch('layers/:id')
   @ApiOperation({ summary: 'Update GIS layer' })
-  @Roles('shift_lead', 'incident_commander', 'gis_analyst', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'shift_lead',
+    'incident_commander',
+    'gis_analyst',
+    'tenant_admin',
+    'platform_admin',
+  )
   @Permissions('gis.layer.update')
   async updateLayer(
     @CurrentUser() actor: RequestUser,
@@ -81,7 +111,13 @@ export class GisController {
   @Delete('layers/:id')
   @HttpCode(204)
   @ApiOperation({ summary: 'Archive GIS layer' })
-  @Roles('shift_lead', 'incident_commander', 'gis_analyst', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'shift_lead',
+    'incident_commander',
+    'gis_analyst',
+    'tenant_admin',
+    'platform_admin',
+  )
   @Permissions('gis.layer.update')
   async archiveLayer(
     @CurrentUser() actor: RequestUser,
@@ -92,7 +128,16 @@ export class GisController {
 
   @Get('layers/:id/features')
   @ApiOperation({ summary: 'Get layer features as GeoJSON FeatureCollection' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'gis_analyst', 'tenant_admin', 'platform_admin', 'auditor')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'gis_analyst',
+    'tenant_admin',
+    'platform_admin',
+    'auditor',
+  )
   async getLayerFeatures(
     @CurrentUser() actor: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -102,7 +147,13 @@ export class GisController {
 
   @Post('layers/:id/features')
   @ApiOperation({ summary: 'Create GIS feature' })
-  @Roles('shift_lead', 'incident_commander', 'gis_analyst', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'shift_lead',
+    'incident_commander',
+    'gis_analyst',
+    'tenant_admin',
+    'platform_admin',
+  )
   @Permissions('gis.feature.create')
   async createFeature(
     @CurrentUser() actor: RequestUser,
@@ -114,7 +165,13 @@ export class GisController {
 
   @Patch('layers/:id/features/:fid')
   @ApiOperation({ summary: 'Update GIS feature' })
-  @Roles('shift_lead', 'incident_commander', 'gis_analyst', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'shift_lead',
+    'incident_commander',
+    'gis_analyst',
+    'tenant_admin',
+    'platform_admin',
+  )
   @Permissions('gis.feature.update')
   async updateFeature(
     @CurrentUser() actor: RequestUser,
@@ -128,7 +185,13 @@ export class GisController {
   @Delete('layers/:id/features/:fid')
   @HttpCode(204)
   @ApiOperation({ summary: 'Soft-delete GIS feature' })
-  @Roles('shift_lead', 'incident_commander', 'gis_analyst', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'shift_lead',
+    'incident_commander',
+    'gis_analyst',
+    'tenant_admin',
+    'platform_admin',
+  )
   @Permissions('gis.feature.delete')
   async deleteFeature(
     @CurrentUser() actor: RequestUser,
@@ -140,7 +203,16 @@ export class GisController {
 
   @Get('incidents/:incidentId/features')
   @ApiOperation({ summary: 'Get all GIS features associated with incident' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'gis_analyst', 'tenant_admin', 'platform_admin', 'auditor')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'gis_analyst',
+    'tenant_admin',
+    'platform_admin',
+    'auditor',
+  )
   async getIncidentFeatures(
     @CurrentUser() actor: RequestUser,
     @Param('incidentId', ParseUUIDPipe) incidentId: string,
@@ -150,7 +222,16 @@ export class GisController {
 
   @Get('features/nearby')
   @ApiOperation({ summary: 'Find nearby features by radius in meters' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'gis_analyst', 'tenant_admin', 'platform_admin', 'auditor')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'gis_analyst',
+    'tenant_admin',
+    'platform_admin',
+    'auditor',
+  )
   async nearbyFeatures(
     @CurrentUser() actor: RequestUser,
     @Query() query: NearbyFeaturesDto,

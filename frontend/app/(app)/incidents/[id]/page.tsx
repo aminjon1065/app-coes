@@ -15,6 +15,9 @@ import {
 import { IncidentRoomPanel } from "@/components/chat/incident-room-panel";
 import { IncidentActivityFeed } from "@/components/incident/incident-activity-feed";
 import { IncidentCommandPanel } from "@/components/incident/incident-command-panel";
+import { LiaisonInvitePanel } from "@/components/incident/liaison-invite-panel";
+import { SitrepCard } from "@/components/incident/sitrep-card";
+import { SitrepForm } from "@/components/incident/sitrep-form";
 import { TaskDetailPanel } from "@/components/task/task-detail-panel";
 import { TaskStatusBoard } from "@/components/task/task-status-board";
 import { TaskWorkspaceLiveShell } from "@/components/task/task-workspace-live-shell";
@@ -93,6 +96,10 @@ export default async function IncidentDetailPage({
     incidentIndex >= 0 && incidentIndex < workspace.incidents.length - 1
       ? workspace.incidents[incidentIndex + 1]
       : null;
+  const canInviteLiaison =
+    workspace.currentUserRoles.some((role) =>
+      ["platform_admin", "tenant_admin", "shift_lead"].includes(role),
+    ) || workspace.currentUserId === incident.commanderId;
 
   return (
     <main className="space-y-6 pb-8">
@@ -367,6 +374,40 @@ export default async function IncidentDetailPage({
               </div>
             </div>
 
+            <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+              <SitrepForm
+                incidentId={incident.id}
+                source={workspace.source}
+                redirectPath={`/incidents/${incident.id}?tab=overview`}
+              />
+
+              <section className="rounded-[30px] border border-white/10 bg-[linear-gradient(135deg,rgba(58,24,13,0.78),rgba(33,14,14,0.7))] p-6 shadow-[0_20px_80px_rgba(0,0,0,0.18)]">
+                <div className="flex items-center gap-3 text-rose-100">
+                  <ShieldAlert className="h-5 w-5" />
+                  <span className="text-sm font-medium">Sitrep focus</span>
+                </div>
+
+                <div className="mt-4">
+                  {recentSitrep ? (
+                    <SitrepCard
+                      sitrep={recentSitrep}
+                      users={workspace.availableUsers}
+                      compact
+                    />
+                  ) : (
+                    <div className="rounded-[22px] border border-white/10 bg-black/15 px-4 py-4">
+                      <div className="text-[11px] uppercase tracking-[0.22em] text-rose-100/70">
+                        No sitrep yet
+                      </div>
+                      <div className="mt-3 text-sm leading-7 text-rose-50/90">
+                        Submit the first sitrep to establish a live incident narrative, attach field evidence, and place the report on the shared timeline.
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </section>
+            </div>
+
             <div className="rounded-[30px] border border-white/10 bg-white/5 p-6 shadow-[0_20px_80px_rgba(0,0,0,0.18)]">
               <div className="flex items-center justify-between gap-4">
                 <div>
@@ -424,6 +465,12 @@ export default async function IncidentDetailPage({
           </div>
 
           <div className="space-y-6">
+            <LiaisonInvitePanel
+              tenantId={incident.tenantId}
+              incidentId={incident.id}
+              disabled={workspace.source !== "api" || !canInviteLiaison}
+            />
+
             <IncidentCommandPanel
               key={`incident-controls-${incident.id}`}
               source={workspace.source}

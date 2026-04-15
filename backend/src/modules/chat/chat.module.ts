@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { DatabaseModule } from '../../shared/database/database.module';
 import { FileEntity } from '../file/entities/file.entity';
 import { User } from '../iam/entities/user.entity';
 import { IncidentParticipant } from '../incident/entities/incident-participant.entity';
@@ -19,6 +20,7 @@ import { MessageService } from './services/message.service';
 @Module({
   imports: [
     ConfigModule,
+    DatabaseModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({

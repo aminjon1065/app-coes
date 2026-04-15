@@ -1,25 +1,39 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
   Post,
+  Query,
   Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiCookieAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiCookieAuth,
+} from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { AuthService } from '../services/auth.service';
 import { LoginDto } from '../dto/login.dto';
+import { AcceptInvitationDto } from '../dto/accept-invitation.dto';
+import { DisableMfaDto } from '../dto/disable-mfa.dto';
 import { MfaVerifyDto } from '../dto/mfa.dto';
+import { ResolveInvitationDto } from '../dto/resolve-invitation.dto';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
-import { CurrentUser, type RequestUser } from '../../../shared/auth/current-user.decorator';
+import {
+  CurrentUser,
+  type RequestUser,
+} from '../../../shared/auth/current-user.decorator';
 import { ConfigService } from '@nestjs/config';
 import { Permissions } from '../../../shared/auth/permissions.decorator';
 import { PermissionsGuard } from '../../../shared/auth/permissions.guard';
 import { TenantAccessGuard } from '../../../shared/auth/tenant-access.guard';
+import { TenantInvitationService } from '../services/tenant-invitation.service';
 
 const REFRESH_COOKIE = 'refresh_token';
 
@@ -28,18 +42,24 @@ const REFRESH_COOKIE = 'refresh_token';
 export class AuthController {
   constructor(
     private readonly auth: AuthService,
+    private readonly invitations: TenantInvitationService,
     private readonly config: ConfigService,
   ) {}
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Login with email + password (+ TOTP when MFA enabled)' })
+  @ApiOperation({
+    summary: 'Login with email + password (+ TOTP when MFA enabled)',
+  })
   async login(
     @Body() dto: LoginDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ?? req.ip ?? '';
+    const ip =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ??
+      req.ip ??
+      '';
     const ua = req.headers['user-agent'] ?? '';
     const tokens = await this.auth.login(dto, ip, ua);
 
@@ -56,17 +76,29 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Rotate access token using refresh cookie' })
-  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const raw = req.cookies?.[REFRESH_COOKIE];
     if (!raw) {
-      return res.status(HttpStatus.UNAUTHORIZED).json({ message: 'No refresh token' });
+      return res
+        .status(HttpStatus.UNAUTHORIZED)
+        .json({ message: 'No refresh token' });
     }
-    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ?? req.ip ?? '';
+    const ip =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ??
+      req.ip ??
+      '';
     const ua = req.headers['user-agent'] ?? '';
     const tokens = await this.auth.refresh(raw, ip, ua);
 
     this.setRefreshCookie(res, tokens.refreshToken);
-    return { accessToken: tokens.accessToken, expiresIn: tokens.expiresIn, tokenType: 'Bearer' };
+    return {
+      accessToken: tokens.accessToken,
+      expiresIn: tokens.expiresIn,
+      tokenType: 'Bearer',
+    };
   }
 
   @Post('logout')
@@ -88,7 +120,32 @@ export class AuthController {
   @Permissions('iam.profile.read')
   @ApiOperation({ summary: 'Current session info and permissions' })
   async me(@CurrentUser() user: RequestUser) {
-    return user;
+    return this.auth.getSessionProfile({
+      sub: user.id,
+      tid: user.tenantId,
+      roles: user.roles,
+      clearance: user.clearance,
+      sessionId: user.sessionId,
+    });
+  }
+
+  @Get('invitations/resolve')
+  @ApiOperation({ summary: 'Resolve a public liaison invitation token' })
+  async resolveInvitation(@Query() query: ResolveInvitationDto) {
+    return {
+      data: await this.invitations.resolve(query.token),
+    };
+  }
+
+  @Post('accept-invite')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Accept a public liaison invitation and create an account',
+  })
+  async acceptInvite(@Body() dto: AcceptInvitationDto) {
+    return {
+      data: await this.invitations.accept(dto),
+    };
   }
 
   // ── MFA ─────────────────────────────────────────────────────────────────────
@@ -112,11 +169,30 @@ export class AuthController {
     await this.auth.confirmMfa(user.id, dto.code);
   }
 
+  @Delete('mfa')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(JwtAuthGuard, TenantAccessGuard, PermissionsGuard)
+  @ApiBearerAuth('access-token')
+  @Permissions('iam.profile.manage')
+  @ApiOperation({
+    summary: 'Disable MFA after confirming the current password',
+  })
+  async mfaDisable(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: DisableMfaDto,
+  ) {
+    await this.auth.disableMfa(user.id, dto.currentPassword);
+  }
+
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
   private setRefreshCookie(res: Response, token: string) {
-    const isSecure = this.config.get<string>('COOKIE_SECURE', 'false') === 'true';
-    const sameSite = (this.config.get<string>('COOKIE_SAME_SITE', 'lax')) as 'lax' | 'strict' | 'none';
+    const isSecure =
+      this.config.get<string>('COOKIE_SECURE', 'false') === 'true';
+    const sameSite = this.config.get<string>('COOKIE_SAME_SITE', 'lax') as
+      | 'lax'
+      | 'strict'
+      | 'none';
     const domain = this.config.get<string>('COOKIE_DOMAIN', 'localhost');
 
     res.cookie(REFRESH_COOKIE, token, {

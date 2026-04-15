@@ -1,18 +1,25 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { DatabaseContextService } from './database-context.service';
 import { TenantRlsInterceptor } from './tenant-rls.interceptor';
 
+@Global()
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
-        url: config.get<string>('DATABASE_URL', 'postgresql://postgres:dev@localhost:6432/coescd_dev'),
-        ssl: config.get<string>('DATABASE_SSL') === 'true' ? { rejectUnauthorized: false } : false,
+        url: config.get<string>(
+          'DATABASE_URL',
+          'postgresql://postgres:dev@localhost:6432/coescd_dev',
+        ),
+        ssl:
+          config.get<string>('DATABASE_SSL') === 'true'
+            ? { rejectUnauthorized: false }
+            : false,
         // autoLoadEntities: each feature module registers its own entities
         // via TypeOrmModule.forFeature([...]) and NestJS picks them up here.
         autoLoadEntities: true,
@@ -20,11 +27,16 @@ import { TenantRlsInterceptor } from './tenant-rls.interceptor';
         poolSize: config.get<number>('DATABASE_POOL_MAX', 20),
         connectTimeoutMS: 10_000,
         extra: {
-          idleTimeoutMillis: config.get<number>('DATABASE_IDLE_TIMEOUT', 600_000),
-          statement_timeout: config.get<number>('DATABASE_STATEMENT_TIMEOUT', 30_000),
+          idleTimeoutMillis: config.get<number>(
+            'DATABASE_IDLE_TIMEOUT',
+            600_000,
+          ),
           application_name: 'coescd-api',
         },
-        logging: config.get('NODE_ENV') === 'development' ? ['error', 'warn', 'schema'] : ['error'],
+        logging:
+          config.get('NODE_ENV') === 'development'
+            ? ['error', 'warn', 'schema']
+            : ['error'],
       }),
     }),
   ],

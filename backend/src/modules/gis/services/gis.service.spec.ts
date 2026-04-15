@@ -42,7 +42,10 @@ describe('GisService', () => {
         { provide: getRepositoryToken(MapLayer), useValue: layerRepo },
         { provide: getRepositoryToken(MapFeature), useValue: featureRepo },
         { provide: getRepositoryToken(Incident), useValue: incidentRepo },
-        { provide: getRepositoryToken(IncidentParticipant), useValue: participantRepo },
+        {
+          provide: getRepositoryToken(IncidentParticipant),
+          useValue: participantRepo,
+        },
         { provide: getRepositoryToken(Task), useValue: taskRepo },
       ],
     }).compile();
@@ -75,7 +78,10 @@ describe('GisService', () => {
       createdBy: 'user-1',
       classification: 3,
     });
-    layerRepo.create.mockImplementation((value) => ({ id: 'layer-1', ...value }));
+    layerRepo.create.mockImplementation((value) => ({
+      id: 'layer-1',
+      ...value,
+    }));
     layerRepo.save.mockResolvedValue({
       id: 'layer-1',
       tenantId: 'tenant-1',

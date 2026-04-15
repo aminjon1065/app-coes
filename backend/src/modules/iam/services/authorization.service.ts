@@ -26,8 +26,16 @@ export class AuthorizationService {
     const rows = await this.userRoles
       .createQueryBuilder('userRole')
       .innerJoin(Role, 'role', 'role.id = userRole.role_id')
-      .innerJoin(RolePermission, 'rolePermission', 'rolePermission.role_id = role.id')
-      .innerJoin(Permission, 'permission', 'permission.id = rolePermission.permission_id')
+      .innerJoin(
+        RolePermission,
+        'rolePermission',
+        'rolePermission.role_id = role.id',
+      )
+      .innerJoin(
+        Permission,
+        'permission',
+        'permission.id = rolePermission.permission_id',
+      )
       .where('userRole.user_id = :userId', { userId })
       .andWhere('(userRole.expires_at IS NULL OR userRole.expires_at > NOW())')
       .andWhere('(role.tenant_id IS NULL OR role.tenant_id = :tenantId)', {
@@ -43,6 +51,24 @@ export class AuthorizationService {
     );
 
     return permissions;
+  }
+
+  async getActiveRoleCodesForUser(
+    userId: string,
+    tenantId: string,
+  ): Promise<string[]> {
+    const rows = await this.userRoles
+      .createQueryBuilder('userRole')
+      .innerJoin(Role, 'role', 'role.id = userRole.role_id')
+      .where('userRole.user_id = :userId', { userId })
+      .andWhere('(userRole.expires_at IS NULL OR userRole.expires_at > NOW())')
+      .andWhere('(role.tenant_id IS NULL OR role.tenant_id = :tenantId)', {
+        tenantId,
+      })
+      .select('role.code', 'code')
+      .getRawMany<{ code: string }>();
+
+    return [...new Set(rows.map((row) => row.code))];
   }
 
   hasPermissions(

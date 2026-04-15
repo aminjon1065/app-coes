@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { MessageSquareText, RadioTower, Wifi, WifiOff } from "lucide-react";
+import { MessageSquareText, PhoneCall, RadioTower, Wifi, WifiOff } from "lucide-react";
 import { ChannelList } from "@/components/chat/channel-list";
 import { MessageComposer } from "@/components/chat/message-composer";
 import { MessageList } from "@/components/chat/message-list";
 import { TypingIndicator } from "@/components/chat/typing-indicator";
+import { CallInviteButton } from "@/components/call/call-invite-button";
+import { CallOverlay } from "@/components/call/call-overlay";
 import { createChatSocket, type ChatSocket } from "@/lib/chat-socket";
 import {
   channelDisplayName,
@@ -13,6 +15,7 @@ import {
   participantDisplayName,
 } from "@/lib/api/chat-workspace";
 import type { IncidentParticipantDto } from "@/lib/api/incident-workspace";
+import { useWebRtcCall } from "@/lib/webrtc";
 import { useChatStore } from "@/stores/chat-store";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +38,21 @@ export function ChatWorkspaceShell({
   );
   const [connected, setConnected] = useState(false);
   const [eventNotice, setEventNotice] = useState<string | null>(null);
+  const {
+    activeCall,
+    localParticipant,
+    localStream,
+    remoteParticipants,
+    joinCall,
+    leaveCall,
+    toggleAudio,
+    toggleVideo,
+    toggleScreenShare,
+  } = useWebRtcCall({
+    socketUrl: initialWorkspace.socketUrl,
+    token: initialWorkspace.socketToken,
+    currentUserId: initialWorkspace.currentUserId,
+  });
   const {
     channels,
     messages,
@@ -128,6 +146,45 @@ export function ChatWorkspaceShell({
   const activeTypingUsers = activeChannelId
     ? (typingUsers[activeChannelId] ?? []).map((item) => item.userId)
     : [];
+  const participantLabels = useMemo(() => {
+    const entries = participants.map(
+      (participant) =>
+        [participant.userId, participantDisplayName(participant)] as const,
+    );
+
+    for (const channel of channels) {
+      const sender = channel.latestMessage?.sender;
+      if (!sender) {
+        continue;
+      }
+
+      entries.push([
+        sender.id,
+        sender.fullName ?? sender.displayName ?? sender.email ?? sender.id,
+      ]);
+    }
+
+    return new Map(entries);
+  }, [channels, participants]);
+  const localOverlayParticipant = localParticipant
+    ? {
+        ...localParticipant,
+        label:
+          participantLabels.get(localParticipant.userId) ??
+          localParticipant.userId.slice(0, 8),
+        stream: localStream,
+      }
+    : null;
+  const remoteOverlayParticipants = useMemo(
+    () =>
+      remoteParticipants.map((participant) => ({
+        ...participant,
+        label:
+          participantLabels.get(participant.userId) ??
+          participant.userId.slice(0, 8),
+      })),
+    [participantLabels, remoteParticipants],
+  );
 
   return (
     <section
@@ -218,11 +275,33 @@ export function ChatWorkspaceShell({
                 (activeChannel ? `${activeChannel.memberCount} members` : "Select a channel to open message history.")}
             </p>
           </div>
-          {eventNotice ? (
-            <div className="rounded-2xl border border-cyan-300/30 bg-cyan-300/10 px-3 py-2 text-sm text-cyan-50">
-              {eventNotice}
-            </div>
-          ) : null}
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            {activeCall ? (
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-300/10 px-3 py-2 text-sm text-emerald-50">
+                <PhoneCall className="h-4 w-4" />
+                Call active
+              </div>
+            ) : (
+              <CallInviteButton
+                channelId={activeChannel?.id ?? null}
+                incidentId={activeChannel?.incidentId ?? null}
+                title={activeChannel ? `${channelDisplayName(activeChannel)} bridge` : "Live coordination bridge"}
+                disabled={
+                  initialWorkspace.source !== "api" ||
+                  !initialWorkspace.currentUserId
+                }
+                onStarted={(session) => {
+                  void joinCall(session);
+                  setEventNotice("Call session opened.");
+                }}
+              />
+            )}
+            {eventNotice ? (
+              <div className="rounded-2xl border border-cyan-300/30 bg-cyan-300/10 px-3 py-2 text-sm text-cyan-50">
+                {eventNotice}
+              </div>
+            ) : null}
+          </div>
         </div>
 
         <div className="mt-5">
@@ -244,6 +323,18 @@ export function ChatWorkspaceShell({
           />
         </div>
       </div>
+
+      {activeCall ? (
+        <CallOverlay
+          call={activeCall}
+          localParticipant={localOverlayParticipant}
+          remoteParticipants={remoteOverlayParticipants}
+          onToggleAudio={() => void toggleAudio()}
+          onToggleVideo={() => void toggleVideo()}
+          onToggleScreen={() => void toggleScreenShare()}
+          onLeave={() => void leaveCall()}
+        />
+      ) : null}
     </section>
   );
 }

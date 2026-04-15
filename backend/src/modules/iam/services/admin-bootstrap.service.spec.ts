@@ -38,7 +38,9 @@ describe('AdminBootstrapService', () => {
           tenantId: 'tenant-1',
         })
         .mockResolvedValueOnce({}),
-      find: jest.fn().mockResolvedValue([{ id: 'role-tenant-admin', code: 'tenant_admin' }]),
+      find: jest
+        .fn()
+        .mockResolvedValue([{ id: 'role-tenant-admin', code: 'tenant_admin' }]),
     };
 
     const dataSource = {

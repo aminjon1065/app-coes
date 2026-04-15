@@ -41,14 +41,31 @@ export class ChannelsController {
 
   @Get()
   @ApiOperation({ summary: 'List channels accessible to the current user' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'agency_liaison', 'tenant_admin', 'platform_admin', 'auditor')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'agency_liaison',
+    'tenant_admin',
+    'platform_admin',
+    'auditor',
+  )
   async list(@CurrentUser() actor: RequestUser) {
     return { data: await this.channels.listForUser(actor) };
   }
 
   @Post()
   @ApiOperation({ summary: 'Create a direct or group chat channel' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'agency_liaison', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'agency_liaison',
+    'tenant_admin',
+    'platform_admin',
+  )
   async create(
     @CurrentUser() actor: RequestUser,
     @Body() dto: CreateChannelDto,
@@ -58,7 +75,16 @@ export class ChannelsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get channel metadata' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'agency_liaison', 'tenant_admin', 'platform_admin', 'auditor')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'agency_liaison',
+    'tenant_admin',
+    'platform_admin',
+    'auditor',
+  )
   async getOne(
     @CurrentUser() actor: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -68,7 +94,13 @@ export class ChannelsController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update channel metadata' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'tenant_admin',
+    'platform_admin',
+  )
   async update(
     @CurrentUser() actor: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -80,7 +112,13 @@ export class ChannelsController {
   @Delete(':id')
   @HttpCode(204)
   @ApiOperation({ summary: 'Archive a channel' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'tenant_admin',
+    'platform_admin',
+  )
   async archive(
     @CurrentUser() actor: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -90,7 +128,16 @@ export class ChannelsController {
 
   @Get(':id/messages')
   @ApiOperation({ summary: 'Get channel message history' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'agency_liaison', 'tenant_admin', 'platform_admin', 'auditor')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'agency_liaison',
+    'tenant_admin',
+    'platform_admin',
+    'auditor',
+  )
   async listMessages(
     @CurrentUser() actor: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -101,7 +148,15 @@ export class ChannelsController {
 
   @Post(':id/messages')
   @ApiOperation({ summary: 'Send a chat message' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'agency_liaison', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'agency_liaison',
+    'tenant_admin',
+    'platform_admin',
+  )
   async sendMessage(
     @CurrentUser() actor: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -112,7 +167,13 @@ export class ChannelsController {
 
   @Patch(':id/messages/:msgId/redact')
   @ApiOperation({ summary: 'Redact a chat message' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'tenant_admin',
+    'platform_admin',
+  )
   async redactMessage(
     @CurrentUser() actor: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -124,7 +185,13 @@ export class ChannelsController {
 
   @Post(':id/members')
   @ApiOperation({ summary: 'Add member to channel' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'tenant_admin',
+    'platform_admin',
+  )
   async addMember(
     @CurrentUser() actor: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -135,7 +202,13 @@ export class ChannelsController {
 
   @Delete(':id/members/:userId')
   @ApiOperation({ summary: 'Remove member from channel' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'tenant_admin',
+    'platform_admin',
+  )
   async removeMember(
     @CurrentUser() actor: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -147,7 +220,15 @@ export class ChannelsController {
 
   @Post(':id/reactions/:msgId')
   @ApiOperation({ summary: 'Add message reaction' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'agency_liaison', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'agency_liaison',
+    'tenant_admin',
+    'platform_admin',
+  )
   async addReaction(
     @CurrentUser() actor: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
@@ -159,13 +240,23 @@ export class ChannelsController {
 
   @Delete(':id/reactions/:msgId/:emoji')
   @ApiOperation({ summary: 'Remove message reaction' })
-  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'agency_liaison', 'tenant_admin', 'platform_admin')
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'agency_liaison',
+    'tenant_admin',
+    'platform_admin',
+  )
   async removeReaction(
     @CurrentUser() actor: RequestUser,
     @Param('id', ParseUUIDPipe) id: string,
     @Param('msgId', ParseUUIDPipe) msgId: string,
     @Param('emoji') emoji: string,
   ) {
-    return { data: await this.messages.removeReaction(actor, id, msgId, emoji) };
+    return {
+      data: await this.messages.removeReaction(actor, id, msgId, emoji),
+    };
   }
 }

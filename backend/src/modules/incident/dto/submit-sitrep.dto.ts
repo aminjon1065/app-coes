@@ -25,7 +25,8 @@ class SitrepLocationDto {
 
 export class SubmitSitrepDto {
   @ApiProperty({
-    example: 'Water level continues to rise. Evacuation of sector B has started.',
+    example:
+      'Water level continues to rise. Evacuation of sector B has started.',
   })
   @IsString()
   @Length(1, 10000)
@@ -38,7 +39,10 @@ export class SubmitSitrepDto {
   @Max(4)
   severity?: number;
 
-  @ApiPropertyOptional({ type: [String], example: ['550e8400-e29b-41d4-a716-446655440000'] })
+  @ApiPropertyOptional({
+    type: [String],
+    example: ['550e8400-e29b-41d4-a716-446655440000'],
+  })
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(20)

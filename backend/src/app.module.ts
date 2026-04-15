@@ -10,6 +10,7 @@ import { HealthModule } from './shared/health/health.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { CallModule } from './modules/call/call.module';
 import { DocumentModule } from './modules/document/document.module';
 import { FileModule } from './modules/file/file.module';
 import { GisModule } from './modules/gis/gis.module';
@@ -64,6 +65,7 @@ import { TaskModule } from './modules/task/task.module';
     AnalyticsModule,
     AuditModule,
     ChatModule,
+    CallModule,
     DocumentModule,
     FileModule,
     GisModule,

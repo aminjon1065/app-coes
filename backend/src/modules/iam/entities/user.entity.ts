@@ -35,7 +35,12 @@ export class User {
   fullName: string;
 
   /** argon2id hash; null for SSO-only users */
-  @Column({ name: 'password_hash', nullable: true, type: 'text', select: false })
+  @Column({
+    name: 'password_hash',
+    nullable: true,
+    type: 'text',
+    select: false,
+  })
   passwordHash: string | null;
 
   /** 1=PUBLIC 2=INTERNAL 3=CONFIDENTIAL 4=SECRET */

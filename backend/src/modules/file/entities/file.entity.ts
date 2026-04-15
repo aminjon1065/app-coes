@@ -11,7 +11,12 @@ import {
 import { Tenant } from '../../iam/entities/tenant.entity';
 import { User } from '../../iam/entities/user.entity';
 
-export const FILE_SCAN_STATUSES = ['PENDING', 'CLEAN', 'INFECTED', 'ERROR'] as const;
+export const FILE_SCAN_STATUSES = [
+  'PENDING',
+  'CLEAN',
+  'INFECTED',
+  'ERROR',
+] as const;
 
 export type FileScanStatus = (typeof FILE_SCAN_STATUSES)[number];
 

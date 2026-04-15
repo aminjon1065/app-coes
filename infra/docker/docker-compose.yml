@@ -341,6 +341,9 @@ services:
       - "3100:3000"   # 3000 is reserved for Next.js
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=coescd_dev
       - GF_USERS_ALLOW_SIGN_UP=false
@@ -367,6 +370,53 @@ services:
       - SPAN_STORAGE_TYPE=memory
       - MEMORY_MAX_TRACES=50000
 
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: coescd-postgres-exporter
+    profiles: ["observability"]
+    restart: unless-stopped
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+    environment:
+      DATA_SOURCE_NAME: "postgresql://postgres:dev@pgbouncer:5432/coescd_dev?sslmode=disable"
+
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: coescd-redis-exporter
+    profiles: ["observability"]
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      REDIS_ADDR: redis://redis:6379
+
+  loki:
+    image: grafana/loki:3.1.1
+    container_name: coescd-loki
+    profiles: ["observability"]
+    restart: unless-stopped
+    command: -config.file=/etc/loki/config.yml
+    ports:
+      - "3101:3100"
+    volumes:
+      - ./loki/config.yml:/etc/loki/config.yml:ro
+      - loki_data:/loki
+
+  promtail:
+    image: grafana/promtail:3.1.1
+    container_name: coescd-promtail
+    profiles: ["observability"]
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      loki:
+        condition: service_started
+    volumes:
+      - ./promtail/promtail.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+
 volumes:
   pg_data:
     driver: local
@@ -383,6 +433,8 @@ volumes:
   prometheus_data:
     driver: local
   grafana_data:
+    driver: local
+  loki_data:
     driver: local
 
 # ── Service endpoints (local) ────────────────────────────────────────────────

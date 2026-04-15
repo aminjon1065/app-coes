@@ -72,7 +72,9 @@ describe('TenantRlsInterceptor', () => {
     } as unknown as DataSource;
 
     const databaseContext = {
-      runWithManager: jest.fn().mockImplementation((_manager, callback) => callback()),
+      runWithManager: jest
+        .fn()
+        .mockImplementation((_manager, callback) => callback()),
     } as unknown as DatabaseContextService;
 
     const interceptor = new TenantRlsInterceptor(dataSource, databaseContext);

@@ -7,3 +7,14 @@ export class MfaVerifyDto {
   @Length(6, 6)
   code: string;
 }
+
+export class MfaEnrollResponseDto {
+  @ApiProperty()
+  secret: string;
+
+  @ApiProperty()
+  uri: string;
+
+  @ApiProperty({ description: 'QR code as data:image/png;base64,...' })
+  qrCodeDataUrl: string;
+}

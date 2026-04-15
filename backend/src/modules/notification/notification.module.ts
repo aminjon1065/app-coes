@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { DatabaseModule } from '../../shared/database/database.module';
 import { ChatModule } from '../chat/chat.module';
 import { User } from '../iam/entities/user.entity';
 import { IncidentParticipant } from '../incident/entities/incident-participant.entity';
@@ -15,6 +16,7 @@ import { NotificationService } from './services/notification.service';
 
 @Module({
   imports: [
+    DatabaseModule,
     ChatModule,
     TypeOrmModule.forFeature([
       NotificationEntity,

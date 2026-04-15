@@ -151,10 +151,16 @@ export class ChatGateway
   }
 
   emitMessageRedacted(message: { channelId: string }) {
-    this.server.to(`channel:${message.channelId}`).emit('message.redacted', message);
+    this.server
+      .to(`channel:${message.channelId}`)
+      .emit('message.redacted', message);
   }
 
-  emitReactionChanged(channelId: string, messageId: string, reactions: unknown[]) {
+  emitReactionChanged(
+    channelId: string,
+    messageId: string,
+    reactions: unknown[],
+  ) {
     this.server.to(`channel:${channelId}`).emit('message.reactions', {
       channelId,
       messageId,

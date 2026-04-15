@@ -48,8 +48,8 @@ describe('TenantAccessGuard', () => {
   it('rejects cross-tenant header', () => {
     const guard = new TenantAccessGuard();
 
-    expect(() => guard.canActivate(createContext('tenant-1', 'tenant-2'))).toThrow(
-      ForbiddenException,
-    );
+    expect(() =>
+      guard.canActivate(createContext('tenant-1', 'tenant-2')),
+    ).toThrow(ForbiddenException);
   });
 });

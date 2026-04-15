@@ -6,9 +6,10 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { Brackets, DataSource, Repository } from 'typeorm';
+import { Brackets, DataSource, IsNull, Repository } from 'typeorm';
 import { RequestUser } from '../../../shared/auth/current-user.decorator';
 import { DatabaseContextService } from '../../../shared/database/database-context.service';
+import { UserRole } from '../../iam/entities/user-role.entity';
 import { User } from '../../iam/entities/user.entity';
 import { Task } from '../../task/entities/task.entity';
 import { AddParticipantDto } from '../dto/add-participant.dto';
@@ -56,6 +57,10 @@ export class IncidentsService {
 
   private get users(): Repository<User> {
     return this.databaseContext.getRepository(this.dataSource, User);
+  }
+
+  private get userRoles(): Repository<UserRole> {
+    return this.databaseContext.getRepository(this.dataSource, UserRole);
   }
 
   private get participants(): Repository<IncidentParticipant> {
@@ -121,8 +126,11 @@ export class IncidentsService {
     return this.findOne(actor, saved.id);
   }
 
-  async findAll(actor: RequestUser, query: ListIncidentsDto): Promise<Incident[]> {
-    const qb = this.baseVisibleQuery(actor).take(query.limit ?? 25);
+  async findAll(
+    actor: RequestUser,
+    query: ListIncidentsDto,
+  ): Promise<Incident[]> {
+    const qb = (await this.baseVisibleQuery(actor)).take(query.limit ?? 25);
 
     if (query.q?.trim()) {
       const term = `%${query.q.trim()}%`;
@@ -131,7 +139,7 @@ export class IncidentsService {
           searchQb
             .where('incident.code ILIKE :term', { term })
             .orWhere('incident.title ILIKE :term', { term })
-            .orWhere('COALESCE(incident.description, \'\') ILIKE :term', {
+            .orWhere("COALESCE(incident.description, '') ILIKE :term", {
               term,
             });
         }),
@@ -141,28 +149,47 @@ export class IncidentsService {
       qb.andWhere('incident.status = :status', { status: query.status });
     }
     if (query.category) {
-      qb.andWhere('incident.category = :category', { category: query.category });
+      qb.andWhere('incident.category = :category', {
+        category: query.category,
+      });
     }
     if (query.severity) {
-      qb.andWhere('incident.severity = :severity', { severity: query.severity });
+      qb.andWhere('incident.severity = :severity', {
+        severity: query.severity,
+      });
     }
 
     switch (query.sort ?? 'newest') {
       case 'updated':
-        qb.orderBy('incident.updatedAt', 'DESC').addOrderBy('incident.createdAt', 'DESC');
+        qb.orderBy('incident.updatedAt', 'DESC').addOrderBy(
+          'incident.createdAt',
+          'DESC',
+        );
         break;
       case 'severity_desc':
-        qb.orderBy('incident.severity', 'DESC').addOrderBy('incident.updatedAt', 'DESC');
+        qb.orderBy('incident.severity', 'DESC').addOrderBy(
+          'incident.updatedAt',
+          'DESC',
+        );
         break;
       case 'severity_asc':
-        qb.orderBy('incident.severity', 'ASC').addOrderBy('incident.updatedAt', 'DESC');
+        qb.orderBy('incident.severity', 'ASC').addOrderBy(
+          'incident.updatedAt',
+          'DESC',
+        );
         break;
       case 'code_asc':
-        qb.orderBy('incident.code', 'ASC').addOrderBy('incident.updatedAt', 'DESC');
+        qb.orderBy('incident.code', 'ASC').addOrderBy(
+          'incident.updatedAt',
+          'DESC',
+        );
         break;
       case 'newest':
       default:
-        qb.orderBy('incident.createdAt', 'DESC').addOrderBy('incident.updatedAt', 'DESC');
+        qb.orderBy('incident.createdAt', 'DESC').addOrderBy(
+          'incident.updatedAt',
+          'DESC',
+        );
         break;
     }
 
@@ -170,7 +197,7 @@ export class IncidentsService {
   }
 
   async findOne(actor: RequestUser, id: string): Promise<Incident> {
-    const incident = await this.baseVisibleQuery(actor)
+    const incident = await (await this.baseVisibleQuery(actor))
       .andWhere('incident.id = :id', { id })
       .getOne();
     if (!incident) {
@@ -184,7 +211,8 @@ export class IncidentsService {
     incidentId: string,
     dto: TransitionStatusDto,
   ): Promise<Incident> {
-    const manager = this.databaseContext.getManager() ?? this.dataSource.manager;
+    const manager =
+      this.databaseContext.getManager() ?? this.dataSource.manager;
     const incident = await manager
       .getRepository(Incident)
       .createQueryBuilder('incident')
@@ -281,8 +309,13 @@ export class IncidentsService {
     incidentId: string,
     dto: ChangeSeverityDto,
   ): Promise<Incident> {
-    const manager = this.databaseContext.getManager() ?? this.dataSource.manager;
-    const incident = await this.loadIncidentForUpdate(manager, actor, incidentId);
+    const manager =
+      this.databaseContext.getManager() ?? this.dataSource.manager;
+    const incident = await this.loadIncidentForUpdate(
+      manager,
+      actor,
+      incidentId,
+    );
 
     if (incident.status === 'closed' || incident.status === 'archived') {
       throw new UnprocessableEntityException('INCIDENT_INVALID_STATE');
@@ -305,7 +338,9 @@ export class IncidentsService {
     ]);
 
     if ((isRaise && !canRaise) || (!isRaise && !canLower)) {
-      throw new UnprocessableEntityException('INCIDENT_SEVERITY_ESCALATION_DENIED');
+      throw new UnprocessableEntityException(
+        'INCIDENT_SEVERITY_ESCALATION_DENIED',
+      );
     }
 
     incident.severity = after;
@@ -339,8 +374,13 @@ export class IncidentsService {
     incidentId: string,
     userId: string,
   ): Promise<Incident> {
-    const manager = this.databaseContext.getManager() ?? this.dataSource.manager;
-    const incident = await this.loadIncidentForUpdate(manager, actor, incidentId);
+    const manager =
+      this.databaseContext.getManager() ?? this.dataSource.manager;
+    const incident = await this.loadIncidentForUpdate(
+      manager,
+      actor,
+      incidentId,
+    );
 
     const targetUser = await this.users.findOne({
       where: { id: userId, tenantId: actor.tenantId, status: 'active' },
@@ -407,8 +447,13 @@ export class IncidentsService {
     userId: string,
     role: AddParticipantDto['role'],
   ): Promise<IncidentParticipant> {
-    const manager = this.databaseContext.getManager() ?? this.dataSource.manager;
-    const incident = await this.loadIncidentForUpdate(manager, actor, incidentId);
+    const manager =
+      this.databaseContext.getManager() ?? this.dataSource.manager;
+    const incident = await this.loadIncidentForUpdate(
+      manager,
+      actor,
+      incidentId,
+    );
 
     await this.ensureParticipantUser(userId, actor.tenantId);
 
@@ -452,16 +497,25 @@ export class IncidentsService {
     incidentId: string,
     userId: string,
   ): Promise<void> {
-    const manager = this.databaseContext.getManager() ?? this.dataSource.manager;
-    const incident = await this.loadIncidentForUpdate(manager, actor, incidentId);
+    const manager =
+      this.databaseContext.getManager() ?? this.dataSource.manager;
+    const incident = await this.loadIncidentForUpdate(
+      manager,
+      actor,
+      incidentId,
+    );
 
     if (incident.commanderId === userId) {
-      throw new UnprocessableEntityException('INCIDENT_COMMANDER_REASSIGN_REQUIRED');
+      throw new UnprocessableEntityException(
+        'INCIDENT_COMMANDER_REASSIGN_REQUIRED',
+      );
     }
 
-    const participant = await manager.getRepository(IncidentParticipant).findOne({
-      where: { incidentId, userId },
-    });
+    const participant = await manager
+      .getRepository(IncidentParticipant)
+      .findOne({
+        where: { incidentId, userId },
+      });
     if (!participant || participant.leftAt) {
       throw new NotFoundException('Participant not found');
     }
@@ -545,16 +599,23 @@ export class IncidentsService {
     incidentId: string,
     dto: SubmitSitrepDto,
   ): Promise<SituationReport> {
-    const manager = this.databaseContext.getManager() ?? this.dataSource.manager;
-    const incident = await this.loadIncidentForUpdate(manager, actor, incidentId);
+    const manager =
+      this.databaseContext.getManager() ?? this.dataSource.manager;
+    const incident = await this.loadIncidentForUpdate(
+      manager,
+      actor,
+      incidentId,
+    );
 
     if (!['open', 'escalated'].includes(incident.status)) {
       throw new UnprocessableEntityException('INCIDENT_SITREP_INVALID_STATE');
     }
 
-    const participant = await manager.getRepository(IncidentParticipant).findOne({
-      where: { incidentId, userId: actor.id },
-    });
+    const participant = await manager
+      .getRepository(IncidentParticipant)
+      .findOne({
+        where: { incidentId, userId: actor.id },
+      });
     if (!participant || participant.leftAt) {
       throw new UnprocessableEntityException('INCIDENT_PARTICIPANT_REQUIRED');
     }
@@ -648,7 +709,7 @@ export class IncidentsService {
     };
   }
 
-  private baseVisibleQuery(actor: RequestUser) {
+  private async baseVisibleQuery(actor: RequestUser) {
     const qb = this.incidents
       .createQueryBuilder('incident')
       .leftJoinAndSelect('incident.commander', 'commander')
@@ -667,6 +728,19 @@ export class IncidentsService {
       );
     }
 
+    if (actor.roles.includes('agency_liaison')) {
+      const scopedIncidentIds = await this.resolveLiaisonIncidentScope(actor);
+      if (scopedIncidentIds !== null) {
+        if (scopedIncidentIds.length === 0) {
+          qb.andWhere('1 = 0');
+        } else {
+          qb.andWhere('incident.id IN (:...scopedIncidentIds)', {
+            scopedIncidentIds,
+          });
+        }
+      }
+    }
+
     return qb;
   }
 
@@ -676,6 +750,57 @@ export class IncidentsService {
       'tenant_admin',
       'shift_lead',
     ]);
+  }
+
+  private async resolveLiaisonIncidentScope(
+    actor: RequestUser,
+  ): Promise<string[] | null> {
+    const assignments = await this.userRoles.find({
+      where: { userId: actor.id },
+      relations: ['role'],
+    });
+    const liaisonAssignments = assignments.filter(
+      (assignment) => assignment.role?.code === 'agency_liaison',
+    );
+
+    if (liaisonAssignments.length === 0) {
+      return [];
+    }
+
+    const registry = new Set<string>();
+    let unscoped = false;
+
+    for (const assignment of liaisonAssignments) {
+      const scope = assignment.scope as { incidentScope?: unknown } | null;
+      const incidentScope = Array.isArray(scope?.incidentScope)
+        ? scope.incidentScope.filter(
+            (item): item is string => typeof item === 'string',
+          )
+        : [];
+
+      if (incidentScope.length === 0) {
+        unscoped = true;
+      }
+
+      for (const incidentId of incidentScope) {
+        registry.add(incidentId);
+      }
+    }
+
+    if (unscoped) {
+      return null;
+    }
+
+    const participantRows = await this.participants.find({
+      where: { userId: actor.id, leftAt: IsNull() },
+      select: { incidentId: true },
+    });
+
+    for (const participant of participantRows) {
+      registry.add(participant.incidentId);
+    }
+
+    return Array.from(registry);
   }
 
   private getAvailableTransitionsForIncident(
@@ -744,7 +869,7 @@ export class IncidentsService {
                 },
               ]
             : []),
-          ...((commander || privileged)
+          ...(commander || privileged
             ? [
                 {
                   code: 'reopen' as const,
@@ -756,7 +881,7 @@ export class IncidentsService {
         ];
       case 'closed':
         return [
-          ...((commander || privileged)
+          ...(commander || privileged
             ? [
                 {
                   code: 'reopen' as const,
@@ -931,7 +1056,10 @@ export class IncidentsService {
     return incident;
   }
 
-  private assertIncidentVisibility(actor: RequestUser, incident: Incident): void {
+  private assertIncidentVisibility(
+    actor: RequestUser,
+    incident: Incident,
+  ): void {
     if (incident.classification > actor.clearance) {
       throw new NotFoundException('Incident not found');
     }
@@ -1033,7 +1161,9 @@ export class IncidentsService {
     return { ts: parsedTs, id };
   }
 
-  private toTimelineCursor(entry: Pick<IncidentTimelineEntry, 'ts' | 'id'>): string {
+  private toTimelineCursor(
+    entry: Pick<IncidentTimelineEntry, 'ts' | 'id'>,
+  ): string {
     return `${entry.ts.toISOString()}|${entry.id}`;
   }
 
@@ -1048,7 +1178,9 @@ export class IncidentsService {
     return { ts: parsedTs, id };
   }
 
-  private toReportedCursor(entry: Pick<SituationReport, 'reportedAt' | 'id'>): string {
+  private toReportedCursor(
+    entry: Pick<SituationReport, 'reportedAt' | 'id'>,
+  ): string {
     return `${entry.reportedAt.toISOString()}|${entry.id}`;
   }
 }

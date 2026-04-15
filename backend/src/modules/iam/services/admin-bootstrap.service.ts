@@ -25,7 +25,10 @@ export class AdminBootstrapService implements OnApplicationBootstrap {
 
     const email = this.config.get<string>('SEED_ADMIN_EMAIL');
     const password = this.config.get<string>('SEED_ADMIN_PASSWORD');
-    const tenantCode = this.config.get<string>('SEED_TENANT_CODE', 'tj-dushanbe');
+    const tenantCode = this.config.get<string>(
+      'SEED_TENANT_CODE',
+      'tj-dushanbe',
+    );
     const tenantName = this.config.get<string>(
       'SEED_TENANT_NAME',
       'Dushanbe National HQ',
@@ -38,7 +41,9 @@ export class AdminBootstrapService implements OnApplicationBootstrap {
     );
 
     if (!email || !password) {
-      this.logger.debug('Admin bootstrap skipped: SEED_ADMIN_EMAIL/PASSWORD not set');
+      this.logger.debug(
+        'Admin bootstrap skipped: SEED_ADMIN_EMAIL/PASSWORD not set',
+      );
       return;
     }
 
@@ -126,13 +131,22 @@ export class AdminBootstrapService implements OnApplicationBootstrap {
             expiresAt: null,
           });
           await manager.save(UserRole, assignment);
-          this.logger.log(`Assigned bootstrap role ${role.code} to ${user.email}`);
+          this.logger.log(
+            `Assigned bootstrap role ${role.code} to ${user.email}`,
+          );
         }
       }
     });
   }
 
   private parseRoleCodes(raw: string): string[] {
-    return [...new Set(raw.split(',').map((role) => role.trim()).filter(Boolean))];
+    return [
+      ...new Set(
+        raw
+          .split(',')
+          .map((role) => role.trim())
+          .filter(Boolean),
+      ),
+    ];
   }
 }

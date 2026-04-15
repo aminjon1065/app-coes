@@ -57,7 +57,9 @@ describe('FileService', () => {
     } as unknown as DatabaseContextService;
     minio = {
       putObject: jest.fn(),
-      presignedGetUrl: jest.fn().mockResolvedValue('https://signed.example/file'),
+      presignedGetUrl: jest
+        .fn()
+        .mockResolvedValue('https://signed.example/file'),
       removeObject: jest.fn(),
     } as unknown as MinioService;
     scanner = {

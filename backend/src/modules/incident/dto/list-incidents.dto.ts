@@ -1,6 +1,14 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import {
   INCIDENT_CATEGORIES,
   INCIDENT_STATUSES,
@@ -15,7 +23,9 @@ export const INCIDENT_LIST_SORTS = [
 ] as const;
 
 export class ListIncidentsDto {
-  @ApiPropertyOptional({ description: 'Search across incident code, title, and description' })
+  @ApiPropertyOptional({
+    description: 'Search across incident code, title, and description',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(200)
