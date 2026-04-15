@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DatabaseModule } from '../../shared/database/database.module';
 import { MinioService } from '../file/services/minio.service';
+import { IamModule } from '../iam/iam.module';
 import { Role } from '../iam/entities/role.entity';
 import { UserRole } from '../iam/entities/user-role.entity';
 import { User } from '../iam/entities/user.entity';
@@ -19,6 +20,7 @@ import { PdfRenderService } from './services/pdf-render.service';
   imports: [
     ConfigModule,
     DatabaseModule,
+    IamModule,
     TypeOrmModule.forFeature([
       DocumentEntity,
       DocumentVersion,

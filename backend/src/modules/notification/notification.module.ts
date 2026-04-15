@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DatabaseModule } from '../../shared/database/database.module';
 import { ChatModule } from '../chat/chat.module';
+import { IamModule } from '../iam/iam.module';
 import { User } from '../iam/entities/user.entity';
 import { IncidentParticipant } from '../incident/entities/incident-participant.entity';
 import { Incident } from '../incident/entities/incident.entity';
@@ -17,6 +18,7 @@ import { NotificationService } from './services/notification.service';
 @Module({
   imports: [
     DatabaseModule,
+    IamModule,
     ChatModule,
     TypeOrmModule.forFeature([
       NotificationEntity,
