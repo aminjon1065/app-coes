@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
@@ -33,6 +33,7 @@ import { PermissionsGuard } from '../../shared/auth/permissions.guard';
 import { RolesGuard } from '../../shared/auth/roles.guard';
 import { TenantAccessGuard } from '../../shared/auth/tenant-access.guard';
 
+@Global()
 @Module({
   imports: [
     DatabaseModule,
