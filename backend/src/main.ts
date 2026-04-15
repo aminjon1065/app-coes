@@ -11,6 +11,7 @@ import pino from 'pino';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
+  console.log('Bootstrap: starting');
   const logger = pino({
     level: process.env.LOG_LEVEL ?? 'info',
     transport:
@@ -26,6 +27,7 @@ async function bootstrap() {
     logger: false,
     abortOnError: false,
   });
+  console.log('Bootstrap: nest app created');
   const config = app.get(ConfigService);
 
   // ── Security headers ─────────────────────────────────────────────────────────
@@ -118,6 +120,7 @@ async function bootstrap() {
 
   // ── Start ─────────────────────────────────────────────────────────────────────
   const port = config.get<number>('APP_PORT_API', 3001);
+  console.log(`Bootstrap: listening on ${port}`);
   await app.listen(port, '0.0.0.0');
   logger.info({ port }, 'CoESCD API started');
 }
