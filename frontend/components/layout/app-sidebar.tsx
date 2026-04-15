@@ -6,8 +6,10 @@ import {
   AlertTriangle,
   BarChart3,
   CheckSquare,
+  FileStack,
   LayoutDashboard,
   Map,
+  MessageSquareText,
   Settings2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -16,6 +18,8 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/incidents", label: "Incidents", icon: AlertTriangle },
+  { href: "/chat", label: "Chat", icon: MessageSquareText },
+  { href: "/documents", label: "Docs", icon: FileStack },
   { href: "/map", label: "Map", icon: Map },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin", label: "Admin", icon: Settings2 },
@@ -102,7 +106,11 @@ export function AppSidebar() {
                       ? "Board, queue, overdue, detail"
                       : item.href === "/dashboard"
                         ? "Priority snapshot"
-                        : "Module stub"}
+                        : item.href === "/chat"
+                          ? "Rooms, messages, typing"
+                          : item.href === "/documents"
+                            ? "Generate, review, publish"
+                            : "Module stub"}
                   </div>
                 </div>
               </Link>

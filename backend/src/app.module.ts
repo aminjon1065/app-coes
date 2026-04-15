@@ -7,8 +7,15 @@ import { DatabaseModule } from './shared/database/database.module';
 import { CacheModule } from './shared/cache/cache.module';
 import { NatsModule } from './shared/events/nats.module';
 import { HealthModule } from './shared/health/health.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { ChatModule } from './modules/chat/chat.module';
+import { DocumentModule } from './modules/document/document.module';
+import { FileModule } from './modules/file/file.module';
+import { GisModule } from './modules/gis/gis.module';
 import { IamModule } from './modules/iam/iam.module';
 import { IncidentModule } from './modules/incident/incident.module';
+import { NotificationModule } from './modules/notification/notification.module';
 import { TaskModule } from './modules/task/task.module';
 
 @Module({
@@ -54,6 +61,13 @@ import { TaskModule } from './modules/task/task.module';
     // ── Domain modules ────────────────────────────────────────────────────────
     IamModule,
     IncidentModule,
+    AnalyticsModule,
+    AuditModule,
+    ChatModule,
+    DocumentModule,
+    FileModule,
+    GisModule,
+    NotificationModule,
     TaskModule,
   ],
 })

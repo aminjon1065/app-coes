@@ -2,14 +2,18 @@ import {
   Body,
   Controller,
   Get,
+  Header,
+  MessageEvent,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
   Query,
+  Sse,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Observable } from 'rxjs';
 import { CurrentUser } from '../../../shared/auth/current-user.decorator';
 import type { RequestUser } from '../../../shared/auth/current-user.decorator';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
@@ -29,13 +33,17 @@ import { TransitionTaskStatusDto } from '../dto/transition-task-status.dto';
 import { UpdateTaskDto } from '../dto/update-task.dto';
 import { UpdateTaskPositionDto } from '../dto/update-task-position.dto';
 import { TasksService } from '../services/tasks.service';
+import { RealtimeEventsService } from '../../../shared/events/realtime-events.service';
 
 @ApiTags('tasks')
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAuthGuard, TenantAccessGuard, RolesGuard, PermissionsGuard)
 @Controller('tasks')
 export class TasksController {
-  constructor(private readonly tasks: TasksService) {}
+  constructor(
+    private readonly tasks: TasksService,
+    private readonly realtimeEvents: RealtimeEventsService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a task' })
@@ -111,6 +119,33 @@ export class TasksController {
     @Query() query: ListOverdueTasksDto,
   ) {
     return { data: await this.tasks.getOverdueTasks(actor, query) };
+  }
+
+  @Sse('stream')
+  @Header('Cache-Control', 'no-cache, no-transform')
+  @Header('Connection', 'keep-alive')
+  @Header('X-Accel-Buffering', 'no')
+  @ApiOperation({ summary: 'Stream task workspace updates via SSE' })
+  @Roles(
+    'duty_operator',
+    'shift_lead',
+    'incident_commander',
+    'field_responder',
+    'tenant_admin',
+    'platform_admin',
+  )
+  @Permissions('task.read')
+  stream(
+    @CurrentUser() actor: RequestUser,
+    @Query('incidentId') incidentId?: string,
+    @Query('taskId') taskId?: string,
+  ): Observable<MessageEvent> {
+    return this.realtimeEvents.stream({
+      tenantId: actor.tenantId,
+      incidentId: incidentId ?? null,
+      taskId: taskId ?? null,
+      eventPrefix: 'task.',
+    });
   }
 
   @Get(':id')

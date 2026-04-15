@@ -34,7 +34,17 @@ async function bootstrap() {
   );
 
   // ── Compression ──────────────────────────────────────────────────────────────
-  app.use(compression());
+  app.use(
+    compression({
+      filter: (req, res) => {
+        const accept = req.headers.accept ?? '';
+        if (typeof accept === 'string' && accept.includes('text/event-stream')) {
+          return false;
+        }
+        return compression.filter(req, res);
+      },
+    }),
+  );
 
   // ── Cookie parser ────────────────────────────────────────────────────────────
   app.use(

@@ -8,6 +8,7 @@ import { TaskAssignmentHistory } from './entities/task-assignment-history.entity
 import { TaskComment } from './entities/task-comment.entity';
 import { Task } from './entities/task.entity';
 import { TasksService } from './services/tasks.service';
+import { RealtimeEventsService } from '../../shared/events/realtime-events.service';
 
 @Module({
   imports: [
@@ -21,7 +22,7 @@ import { TasksService } from './services/tasks.service';
     ]),
   ],
   controllers: [TasksController],
-  providers: [TasksService],
+  providers: [TasksService, RealtimeEventsService],
   exports: [TypeOrmModule, TasksService],
 })
 export class TaskModule {}

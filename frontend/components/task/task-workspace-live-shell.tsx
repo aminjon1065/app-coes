@@ -8,11 +8,17 @@ import {
   startTransition,
 } from "react";
 import { RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { TaskControlPanel } from "@/components/task/task-control-panel";
 import { TaskDetailPanel } from "@/components/task/task-detail-panel";
 import { TaskKpiStrip } from "@/components/task/task-kpi-strip";
 import { TaskRailList } from "@/components/task/task-rail-list";
 import { TaskStatusBoard } from "@/components/task/task-status-board";
+import {
+  describeRealtimeEvent,
+  extractTouchedTaskIds,
+  type FrontendRealtimeEvent,
+} from "@/lib/realtime";
 import {
   formatTaskRelative,
   getTaskBoardSignature,
@@ -41,8 +47,6 @@ type TaskWorkspaceLiveShellProps = {
   overdueSubtitle?: string;
   overdueEmptyLabel?: string;
 };
-
-const REFRESH_INTERVAL_MS = 15000;
 
 function getErrorMessage(body: unknown, status: number) {
   if (typeof body === "string" && body.trim()) {
@@ -116,20 +120,32 @@ export function TaskWorkspaceLiveShell({
   const [lastSyncedAt, setLastSyncedAt] = useState(initialFetchedAt);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [streamState, setStreamState] = useState<"connecting" | "live" | "offline">(
+    "connecting",
+  );
+  const [highlightedTaskIds, setHighlightedTaskIds] = useState<string[]>([]);
   const refreshInFlightRef = useRef(false);
+  const pendingRefreshRef = useRef(false);
+  const highlightTimeoutRef = useRef<number | null>(null);
   const canRefresh = workspace.source === "api";
 
   useEffect(() => {
     setWorkspace(initialWorkspace);
     setLastSyncedAt(initialFetchedAt);
     setError(null);
+    setStreamState(initialWorkspace.source === "api" ? "connecting" : "offline");
+    setHighlightedTaskIds([]);
   }, [incidentId, initialFetchedAt, initialWorkspace, taskId]);
 
   async function performRefresh(manual = false) {
-    if (!canRefresh || refreshInFlightRef.current) {
+    if (!canRefresh) {
       return;
     }
-    if (!manual && document.visibilityState !== "visible") {
+    if (refreshInFlightRef.current) {
+      pendingRefreshRef.current = true;
+      return;
+    }
+    if (!manual && typeof document !== "undefined" && document.visibilityState !== "visible") {
       return;
     }
 
@@ -151,8 +167,10 @@ export function TaskWorkspaceLiveShell({
         setWorkspace(payload.data);
         setLastSyncedAt(payload.fetchedAt);
         setError(null);
+        setStreamState("live");
       });
     } catch (refreshError) {
+      setStreamState("offline");
       setError(
         refreshError instanceof Error
           ? refreshError.message
@@ -161,11 +179,35 @@ export function TaskWorkspaceLiveShell({
     } finally {
       refreshInFlightRef.current = false;
       setIsRefreshing(false);
+      if (pendingRefreshRef.current) {
+        pendingRefreshRef.current = false;
+        void performRefresh(true);
+      }
     }
   }
 
-  const pollRefresh = useEffectEvent(async () => {
-    await performRefresh(false);
+  const handleStreamRefresh = useEffectEvent(async () => {
+    await performRefresh(true);
+  });
+
+  const registerLiveEvent = useEffectEvent((event: FrontendRealtimeEvent) => {
+    const touchedTaskIds = extractTouchedTaskIds(event);
+
+    if (touchedTaskIds.length > 0) {
+      setHighlightedTaskIds(touchedTaskIds);
+      if (highlightTimeoutRef.current !== null) {
+        window.clearTimeout(highlightTimeoutRef.current);
+      }
+      highlightTimeoutRef.current = window.setTimeout(() => {
+        setHighlightedTaskIds([]);
+      }, 3200);
+    }
+
+    const copy = describeRealtimeEvent(event);
+    toast(copy.title, {
+      id: `${event.event}:${event.taskId ?? event.incidentId ?? "workspace"}:${event.emittedAt ?? Date.now()}`,
+      description: copy.description,
+    });
   });
 
   useEffect(() => {
@@ -173,12 +215,57 @@ export function TaskWorkspaceLiveShell({
       return;
     }
 
-    const intervalId = window.setInterval(() => {
-      void pollRefresh();
-    }, REFRESH_INTERVAL_MS);
+    setStreamState("connecting");
+    const searchParams = new URLSearchParams();
+
+    if (incidentId) {
+      searchParams.set("incidentId", incidentId);
+    }
+    if (taskId) {
+      searchParams.set("taskId", taskId);
+    }
+
+    const eventSource = new EventSource(
+      `/api/tasks/stream${searchParams.toString() ? `?${searchParams.toString()}` : ""}`,
+    );
+
+    eventSource.onopen = () => {
+      setStreamState("live");
+      setError(null);
+    };
+
+    eventSource.onerror = () => {
+      setStreamState("offline");
+      setError("Live task stream disconnected. Waiting for automatic reconnect.");
+    };
+
+    eventSource.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data) as FrontendRealtimeEvent;
+        if (payload.event === "heartbeat") {
+          return;
+        }
+        registerLiveEvent(payload);
+      } catch {
+        // Ignore parse failures and fall through to a conservative refresh.
+      }
+      void handleStreamRefresh();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void handleStreamRefresh();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      eventSource.close();
+      if (highlightTimeoutRef.current !== null) {
+        window.clearTimeout(highlightTimeoutRef.current);
+      }
     };
   }, [canRefresh, incidentId, taskId]);
 
@@ -192,7 +279,7 @@ export function TaskWorkspaceLiveShell({
             </p>
             <p className="mt-2 text-sm leading-6 text-slate-300">
               {canRefresh
-                ? "Board, queues, and selected task detail auto-refresh every 15 seconds while the page is visible."
+                ? "Board, queues, and selected task detail now refresh from a live event stream instead of timer polling."
                 : "Task workspace is running in mock fallback mode and stays read-only."}
             </p>
           </div>
@@ -200,7 +287,7 @@ export function TaskWorkspaceLiveShell({
           <div className="flex flex-wrap items-center gap-3">
             <div className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-slate-300">
               {canRefresh
-                ? `Synced ${formatTaskRelative(lastSyncedAt)}`
+                ? `${streamState === "live" ? "Live stream" : streamState === "connecting" ? "Connecting..." : "Reconnecting..."} · synced ${formatTaskRelative(lastSyncedAt)}`
                 : "Mock workspace"}
             </div>
             {canRefresh ? (
@@ -239,6 +326,7 @@ export function TaskWorkspaceLiveShell({
             key={getTaskBoardSignature(workspace.board)}
             board={workspace.board}
             selectedTaskId={workspace.selectedTask?.id}
+            highlightedTaskIds={highlightedTaskIds}
             interactive={workspace.source === "api"}
             taskHrefBuilder={taskHrefBuilder}
           />

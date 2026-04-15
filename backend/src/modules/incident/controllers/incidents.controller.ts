@@ -3,13 +3,17 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
+  MessageEvent,
   Param,
   ParseUUIDPipe,
   Post,
   Query,
+  Sse,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Observable } from 'rxjs';
 import { CurrentUser } from '../../../shared/auth/current-user.decorator';
 import type { RequestUser } from '../../../shared/auth/current-user.decorator';
 import { JwtAuthGuard } from '../../../shared/auth/jwt-auth.guard';
@@ -28,13 +32,17 @@ import { ListTimelineDto } from '../dto/list-timeline.dto';
 import { SubmitSitrepDto } from '../dto/submit-sitrep.dto';
 import { TransitionStatusDto } from '../dto/transition-status.dto';
 import { IncidentsService } from '../services/incidents.service';
+import { RealtimeEventsService } from '../../../shared/events/realtime-events.service';
 
 @ApiTags('incidents')
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAuthGuard, TenantAccessGuard, RolesGuard, PermissionsGuard)
 @Controller('incidents')
 export class IncidentsController {
-  constructor(private readonly incidents: IncidentsService) {}
+  constructor(
+    private readonly incidents: IncidentsService,
+    private readonly realtimeEvents: RealtimeEventsService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new incident draft' })
@@ -188,5 +196,24 @@ export class IncidentsController {
     @Query() query: ListTimelineDto,
   ) {
     return this.incidents.getTimeline(actor, id, query);
+  }
+
+  @Sse(':id/stream')
+  @Header('Cache-Control', 'no-cache, no-transform')
+  @Header('Connection', 'keep-alive')
+  @Header('X-Accel-Buffering', 'no')
+  @ApiOperation({ summary: 'Stream incident activity updates via SSE' })
+  @Roles('duty_operator', 'shift_lead', 'incident_commander', 'field_responder', 'tenant_admin', 'platform_admin')
+  @Permissions('incident.read')
+  async stream(
+    @CurrentUser() actor: RequestUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<Observable<MessageEvent>> {
+    await this.incidents.findOne(actor, id);
+
+    return this.realtimeEvents.stream({
+      tenantId: actor.tenantId,
+      incidentId: id,
+    });
   }
 }

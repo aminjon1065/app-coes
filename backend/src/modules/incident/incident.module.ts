@@ -8,6 +8,7 @@ import { IncidentTimelineEntry } from './entities/incident-timeline-entry.entity
 import { Incident } from './entities/incident.entity';
 import { SituationReport } from './entities/situation-report.entity';
 import { IncidentsService } from './services/incidents.service';
+import { RealtimeEventsService } from '../../shared/events/realtime-events.service';
 
 @Module({
   imports: [
@@ -21,7 +22,7 @@ import { IncidentsService } from './services/incidents.service';
     ]),
   ],
   controllers: [IncidentsController],
-  providers: [IncidentsService],
+  providers: [IncidentsService, RealtimeEventsService],
   exports: [IncidentsService],
 })
 export class IncidentModule {}

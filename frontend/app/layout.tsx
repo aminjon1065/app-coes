@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
+import { LiveToastProvider } from "@/components/ui/live-toast-provider";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -31,6 +32,7 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-background font-sans text-foreground">
         {children}
+        <LiveToastProvider />
       </body>
     </html>
   );

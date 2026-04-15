@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { ArrowRight, ClipboardList, RadioTower } from "lucide-react";
 import {
   useActionState,
   useEffect,
@@ -8,6 +9,7 @@ import {
   useState,
   startTransition,
 } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import {
@@ -35,6 +37,10 @@ type IncidentCommandPanelProps = {
   availableUsers: UserSummary[];
   participants: IncidentParticipantDto[];
   redirectPath: string;
+  tasksHref?: string;
+  overviewHref?: string;
+  openTaskCount?: number;
+  overdueTaskCount?: number;
 };
 
 function useIncidentMutation(
@@ -96,7 +102,7 @@ function Section({
             <p className="mt-2 text-sm leading-6 text-slate-300">{subtitle}</p>
           </div>
           <span className="rounded-full border border-white/10 bg-black/15 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.22em] text-slate-400">
-            Open
+            Expand
           </span>
         </div>
       </summary>
@@ -218,6 +224,10 @@ export function IncidentCommandPanel({
   availableUsers,
   participants,
   redirectPath,
+  tasksHref,
+  overviewHref,
+  openTaskCount = 0,
+  overdueTaskCount = 0,
 }: IncidentCommandPanelProps) {
   const transitionMutation = useIncidentMutation(transitionIncidentAction);
   const severityMutation = useIncidentMutation(changeIncidentSeverityAction);
@@ -238,7 +248,7 @@ export function IncidentCommandPanel({
   );
 
   return (
-    <aside className="space-y-6">
+    <aside className="space-y-6 xl:sticky xl:top-6">
       <section className="rounded-[32px] border border-white/10 bg-[rgba(12,16,26,0.88)] p-6 shadow-[0_24px_90px_rgba(0,0,0,0.2)]">
         <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-cyan-200/70">
           Incident command rail
@@ -250,6 +260,55 @@ export function IncidentCommandPanel({
           These controls target the incident slice directly and keep the detail
           page usable as the command workspace.
         </p>
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-[22px] border border-white/10 bg-black/15 px-4 py-3">
+            <div className="text-[11px] uppercase tracking-[0.22em] text-slate-500">
+              Incident state
+            </div>
+            <div className="mt-2 text-sm font-medium text-white">
+              {incident.status} · Sev {incident.severity}
+            </div>
+            <div className="mt-1 text-xs text-slate-500">
+              {incident.commander?.fullName ?? "Commander unassigned"}
+            </div>
+          </div>
+          <div className="rounded-[22px] border border-white/10 bg-black/15 px-4 py-3">
+            <div className="text-[11px] uppercase tracking-[0.22em] text-slate-500">
+              Task pressure
+            </div>
+            <div className="mt-2 text-sm font-medium text-white">
+              {openTaskCount} open · {overdueTaskCount} overdue
+            </div>
+            <div className="mt-1 text-xs text-slate-500">
+              {participants.length} active participants
+            </div>
+          </div>
+        </div>
+
+        {tasksHref || overviewHref ? (
+          <div className="mt-5 flex flex-wrap gap-3">
+            {overviewHref ? (
+              <Link
+                href={overviewHref}
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-200 transition hover:bg-white/10"
+              >
+                <ClipboardList className="h-4 w-4" />
+                Overview
+              </Link>
+            ) : null}
+            {tasksHref ? (
+              <Link
+                href={tasksHref}
+                className="inline-flex items-center gap-2 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-sm font-medium text-cyan-50 transition hover:bg-cyan-300/16"
+              >
+                <RadioTower className="h-4 w-4" />
+                Open tasks
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            ) : null}
+          </div>
+        ) : null}
       </section>
 
       <Section

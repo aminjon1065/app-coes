@@ -8,6 +8,11 @@ import {
   startTransition,
 } from "react";
 import { RefreshCw } from "lucide-react";
+import { toast } from "sonner";
+import {
+  describeRealtimeEvent,
+  type FrontendRealtimeEvent,
+} from "@/lib/realtime";
 import {
   formatTaskRelative,
   formatTaskTimestamp,
@@ -46,8 +51,6 @@ type IncidentActivityResponse = {
   } | null;
   fetchedAt: string;
 };
-
-const REFRESH_INTERVAL_MS = 15000;
 
 function findUserName(users: UserSummary[], userId: string | null | undefined) {
   if (!userId) {
@@ -310,17 +313,25 @@ export function IncidentActivityFeed({
   const [lastSyncedAt, setLastSyncedAt] = useState(refreshedAt);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [streamState, setStreamState] = useState<"connecting" | "live" | "offline">(
+    "connecting",
+  );
   const [isLoadingOlderTimeline, setIsLoadingOlderTimeline] = useState(false);
   const [isLoadingOlderSitreps, setIsLoadingOlderSitreps] = useState(false);
   const refreshInFlightRef = useRef(false);
+  const pendingRefreshRef = useRef(false);
   const participantCount = participants.length;
   const canRefresh = source === "api";
 
   async function performRefresh(manual = false) {
-    if (!canRefresh || refreshInFlightRef.current) {
+    if (!canRefresh) {
       return;
     }
-    if (!manual && document.visibilityState !== "visible") {
+    if (refreshInFlightRef.current) {
+      pendingRefreshRef.current = true;
+      return;
+    }
+    if (!manual && typeof document !== "undefined" && document.visibilityState !== "visible") {
       return;
     }
 
@@ -339,14 +350,20 @@ export function IncidentActivityFeed({
       startTransition(() => {
         if (latestTimeline) {
           setTimeline((current) => mergeTimeline(current, latestTimeline.data));
+          setTimelineNextCursor(latestTimeline.page.nextCursor);
+          setTimelineHasMore(latestTimeline.page.hasMore);
         }
         if (latestSitreps) {
           setSitreps((current) => mergeSitreps(current, latestSitreps.data));
+          setSitrepNextCursor(latestSitreps.page.nextCursor);
+          setSitrepHasMore(latestSitreps.page.hasMore);
         }
         setLastSyncedAt(payload.fetchedAt);
         setError(null);
+        setStreamState("live");
       });
     } catch (refreshError) {
+      setStreamState("offline");
       setError(
         refreshError instanceof Error
           ? refreshError.message
@@ -355,11 +372,23 @@ export function IncidentActivityFeed({
     } finally {
       refreshInFlightRef.current = false;
       setIsRefreshing(false);
+      if (pendingRefreshRef.current) {
+        pendingRefreshRef.current = false;
+        void performRefresh(true);
+      }
     }
   }
 
-  const pollRefresh = useEffectEvent(async () => {
-    await performRefresh(false);
+  const handleStreamRefresh = useEffectEvent(async () => {
+    await performRefresh(true);
+  });
+
+  const registerLiveEvent = useEffectEvent((event: FrontendRealtimeEvent) => {
+    const copy = describeRealtimeEvent(event);
+    toast(copy.title, {
+      id: `${event.event}:${event.incidentId ?? "incident"}:${event.emittedAt ?? Date.now()}`,
+      description: copy.description,
+    });
   });
 
   useEffect(() => {
@@ -367,12 +396,43 @@ export function IncidentActivityFeed({
       return;
     }
 
-    const intervalId = window.setInterval(() => {
-      void pollRefresh();
-    }, REFRESH_INTERVAL_MS);
+    setStreamState("connecting");
+    const eventSource = new EventSource(`/api/incidents/${incidentId}/stream`);
+
+    eventSource.onopen = () => {
+      setStreamState("live");
+      setError(null);
+    };
+
+    eventSource.onerror = () => {
+      setStreamState("offline");
+      setError("Live incident stream disconnected. Waiting for automatic reconnect.");
+    };
+
+    eventSource.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data) as FrontendRealtimeEvent;
+        if (payload.event === "heartbeat") {
+          return;
+        }
+        registerLiveEvent(payload);
+      } catch {
+        // Ignore parse failures and fall through to a conservative refresh.
+      }
+      void handleStreamRefresh();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void handleStreamRefresh();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      eventSource.close();
     };
   }, [canRefresh, incidentId]);
 
@@ -462,7 +522,7 @@ export function IncidentActivityFeed({
             </p>
             <p className="mt-2 text-sm leading-6 text-slate-300">
               {canRefresh
-                ? "Timeline and sitreps auto-refresh every 15 seconds while the page is visible."
+                ? "Timeline and sitreps now refresh from a live event stream instead of timer polling."
                 : "Activity feed is running in mock fallback mode and stays read-only."}
             </p>
           </div>
@@ -470,7 +530,7 @@ export function IncidentActivityFeed({
           <div className="flex flex-wrap items-center gap-3">
             <div className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-slate-300">
               {canRefresh
-                ? `Synced ${formatTaskRelative(lastSyncedAt)}`
+                ? `${streamState === "live" ? "Live stream" : streamState === "connecting" ? "Connecting..." : "Reconnecting..."} · synced ${formatTaskRelative(lastSyncedAt)}`
                 : "Mock feed"}
             </div>
             {canRefresh ? (

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -43,6 +43,7 @@ type TaskStatusBoardProps = {
   maxPerColumn?: number;
   interactive?: boolean;
   taskHrefBuilder?: (taskId: string) => string;
+  highlightedTaskIds?: string[];
 };
 
 type TaskLocation = {
@@ -148,11 +149,13 @@ function TaskCardBody({
   selectedTaskId,
   dragHandle,
   taskHrefBuilder,
+  highlighted,
 }: {
   task: TaskDto;
   selectedTaskId?: string | null;
   dragHandle?: ReactNode;
   taskHrefBuilder: (taskId: string) => string;
+  highlighted?: boolean;
 }) {
   const due = getDueState(task);
   const priority = TASK_PRIORITY_META[task.priority];
@@ -164,7 +167,10 @@ function TaskCardBody({
         "group rounded-[24px] border p-4 transition",
         selected
           ? "border-cyan-300/35 bg-cyan-300/10 shadow-[0_0_0_1px_rgba(103,232,249,0.1)_inset]"
-          : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/8",
+          : highlighted
+            ? "border-amber-300/30 bg-amber-300/10 shadow-[0_0_0_1px_rgba(252,211,77,0.14)_inset]"
+            : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/8",
+        highlighted && "live-card-flash",
       )}
     >
       <div className="flex items-start justify-between gap-3">
@@ -211,11 +217,13 @@ function SortableTaskCard({
   selectedTaskId,
   interactive,
   taskHrefBuilder,
+  highlighted = false,
 }: {
   task: TaskDto;
   selectedTaskId?: string | null;
   interactive: boolean;
   taskHrefBuilder: (taskId: string) => string;
+  highlighted?: boolean;
 }) {
   const {
     attributes,
@@ -245,6 +253,7 @@ function SortableTaskCard({
         task={task}
         selectedTaskId={selectedTaskId}
         taskHrefBuilder={taskHrefBuilder}
+        highlighted={highlighted}
         dragHandle={
           interactive ? (
             <button
@@ -271,6 +280,7 @@ function BoardColumn({
   maxPerColumn,
   interactive,
   taskHrefBuilder,
+  highlightedTaskIds,
 }: {
   statusKey: TaskBoardColumnKey;
   tasks: TaskDto[];
@@ -278,6 +288,7 @@ function BoardColumn({
   maxPerColumn?: number;
   interactive: boolean;
   taskHrefBuilder: (taskId: string) => string;
+  highlightedTaskIds: string[];
 }) {
   const meta = TASK_STATUS_META[statusKey];
   const renderedTasks =
@@ -323,6 +334,7 @@ function BoardColumn({
                 selectedTaskId={selectedTaskId}
                 interactive={interactive}
                 taskHrefBuilder={taskHrefBuilder}
+                highlighted={highlightedTaskIds.includes(task.id)}
               />
             ))
           ) : (
@@ -342,6 +354,7 @@ export function TaskStatusBoard({
   maxPerColumn,
   interactive = false,
   taskHrefBuilder = getTaskHref,
+  highlightedTaskIds = [],
 }: TaskStatusBoardProps) {
   const router = useRouter();
   const sensors = useSensors(
@@ -354,6 +367,7 @@ export function TaskStatusBoard({
   );
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [conflictFeedback, setConflictFeedback] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const boardSignature = getTaskBoardSignature(board);
   const optimisticSignature = optimisticBoard
@@ -369,12 +383,40 @@ export function TaskStatusBoard({
     ? findTaskLocation(displayedBoard, activeTaskId)
     : null;
 
+  useEffect(() => {
+    if (!optimisticBoard || activeTaskId || isPending) {
+      return;
+    }
+
+    if (optimisticSignature === boardSignature) {
+      const clearId = window.setTimeout(() => {
+        setOptimisticBoard(null);
+      }, 0);
+
+      return () => {
+        window.clearTimeout(clearId);
+      };
+    }
+
+    const conflictId = window.setTimeout(() => {
+      setOptimisticBoard(null);
+      setConflictFeedback(
+        "Board changed from another live update while your local move was pending. Latest live state is now shown.",
+      );
+    }, 0);
+
+    return () => {
+      window.clearTimeout(conflictId);
+    };
+  }, [activeTaskId, boardSignature, isPending, optimisticBoard, optimisticSignature]);
+
   function handleDragStart(event: DragStartEvent) {
     if (!boardInteractive) {
       return;
     }
 
     setFeedback(null);
+    setConflictFeedback(null);
     setActiveTaskId(String(event.active.id));
   }
 
@@ -465,6 +507,12 @@ export function TaskStatusBoard({
           </div>
         ) : null}
 
+        {conflictFeedback ? (
+          <div className="border-b border-amber-300/20 bg-amber-300/10 px-6 py-3 text-sm text-amber-50">
+            {conflictFeedback}
+          </div>
+        ) : null}
+
         <div className="overflow-x-auto">
           <div className="grid min-w-[1220px] grid-cols-6 gap-4 px-4 py-4">
             {TASK_STATUS_ORDER.map((statusKey) => (
@@ -476,6 +524,7 @@ export function TaskStatusBoard({
                 maxPerColumn={maxPerColumn}
                 interactive={boardInteractive}
                 taskHrefBuilder={taskHrefBuilder}
+                highlightedTaskIds={highlightedTaskIds}
               />
             ))}
           </div>

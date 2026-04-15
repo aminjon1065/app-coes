@@ -34,6 +34,17 @@ services:
       - pg_data:/var/lib/postgresql/data
       - ../../tools/migrations/init.sql:/docker-entrypoint-initdb.d/00_init.sql:ro
       - ../../tools/migrations/iam/001_initial.sql:/docker-entrypoint-initdb.d/01_iam.sql:ro
+      - ../../tools/migrations/incident/001_initial.sql:/docker-entrypoint-initdb.d/02_incident.sql:ro
+      - ../../tools/migrations/incident/002_gis_fields.sql:/docker-entrypoint-initdb.d/03_incident_gis.sql:ro
+      - ../../tools/migrations/task/001_initial.sql:/docker-entrypoint-initdb.d/04_task.sql:ro
+      - ../../tools/migrations/task/002_operational_slice.sql:/docker-entrypoint-initdb.d/05_task_operational.sql:ro
+      - ../../tools/migrations/file/001_initial.sql:/docker-entrypoint-initdb.d/06_file.sql:ro
+      - ../../tools/migrations/chat/001_initial.sql:/docker-entrypoint-initdb.d/07_chat.sql:ro
+      - ../../tools/migrations/document/001_initial.sql:/docker-entrypoint-initdb.d/08_document.sql:ro
+      - ../../tools/migrations/gis/001_initial.sql:/docker-entrypoint-initdb.d/09_gis.sql:ro
+      - ../../tools/migrations/audit/001_initial.sql:/docker-entrypoint-initdb.d/10_audit.sql:ro
+      - ../../tools/migrations/analytics/001_initial.sql:/docker-entrypoint-initdb.d/11_analytics.sql:ro
+      - ../../tools/migrations/notification/001_initial.sql:/docker-entrypoint-initdb.d/12_notification.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d coescd_dev"]
       interval: 5s
