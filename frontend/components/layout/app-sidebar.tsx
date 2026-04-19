@@ -8,6 +8,7 @@ import {
   CheckSquare,
   FileStack,
   LayoutDashboard,
+  Mail,
   Map,
   MessageSquareText,
   ShieldCheck,
@@ -23,6 +24,7 @@ const navItems = [
   { href: "/documents", label: "Docs", icon: FileStack },
   { href: "/map", label: "Map", icon: Map },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/email-analytics", label: "Email Marketing", icon: Mail },
   { href: "/settings", label: "Security", icon: ShieldCheck },
   { href: "/admin", label: "Admin", icon: Settings2 },
 ];
@@ -114,7 +116,9 @@ export function AppSidebar() {
                         ? "MFA and profile security"
                       : item.href === "/documents"
                         ? "Generate, review, publish"
-                        : "Module stub"}
+                        : item.href === "/email-analytics"
+                        ? "Opens, clicks, deliverability"
+                      : "Module stub"}
                   </div>
                 </div>
               </Link>
